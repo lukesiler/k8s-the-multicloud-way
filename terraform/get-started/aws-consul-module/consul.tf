@@ -25,10 +25,32 @@ resource "aws_vpc" "siler-tf-consul" {
   }
 }
 
-resource "aws_subnet" "siler-tf-consul" {
+resource "aws_subnet" "siler-tf-consul-a" {
   vpc_id     = "${aws_vpc.siler-tf-consul.id}"
   cidr_block = "10.0.0.0/24"
+  availability_zone = "${var.region}a"
+  map_public_ip_on_launch = true
+
+  tags {
+    Name = "${var.env_name}"
+  }
+}
+
+resource "aws_subnet" "siler-tf-consul-b" {
+  vpc_id     = "${aws_vpc.siler-tf-consul.id}"
+  cidr_block = "10.0.1.0/24"
   availability_zone = "${var.region}b"
+  map_public_ip_on_launch = true
+
+  tags {
+    Name = "${var.env_name}"
+  }
+}
+
+resource "aws_subnet" "siler-tf-consul-c" {
+  vpc_id     = "${aws_vpc.siler-tf-consul.id}"
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "${var.region}c"
   map_public_ip_on_launch = true
 
   tags {
@@ -41,10 +63,12 @@ module "consul" {
 
   vpc_id  = "${aws_vpc.siler-tf-consul.id}"
   subnets = {
-    "0" = "${aws_subnet.siler-tf-consul.id}"
+    "0" = "${aws_subnet.siler-tf-consul-a.id}"
+    "1" = "${aws_subnet.siler-tf-consul-b.id}"
+    "2" = "${aws_subnet.siler-tf-consul-c.id}"
   }
   key_name = "siler-play"
   key_path = "../../../../secrets/aws/***REMOVED***@***REMOVED***.com/siler-play.pem"
   region  = "${var.region}"
-  servers = "1"
+  servers = "3"
 }
