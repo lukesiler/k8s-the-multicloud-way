@@ -37,6 +37,10 @@ resource "google_compute_subnetwork" "subnet-nodes" {
   region        = "${var.region}"
 }
 
+output "subnet-nodes-self_link" {
+  value = "${google_compute_subnetwork.subnet-nodes.self_link}"
+}
+
 resource "google_compute_firewall" "allow-internal" {
   name    = "${var.env}-allow-internal"
   network = "${google_compute_network.net.self_link}"
@@ -56,6 +60,10 @@ resource "google_compute_firewall" "allow-internal" {
   source_ranges = ["10.240.0.0/24", "10.200.0.0/16"]
 }
 
+output "allow-internal-self_link" {
+  value = "${google_compute_firewall.allow-internal.self_link}"
+}
+
 resource "google_compute_firewall" "allow-external" {
   name    = "${var.env}-allow-external"
   network = "${google_compute_network.net.self_link}"
@@ -70,4 +78,13 @@ resource "google_compute_firewall" "allow-external" {
   }
 
   source_ranges = ["0.0.0.0/0"]
+}
+
+output "allow-external-self_link" {
+  value = "${google_compute_firewall.allow-external.self_link}"
+}
+
+resource "google_compute_address" "api-server" {
+  name = "${var.env}"
+  region = "${var.region}"
 }
