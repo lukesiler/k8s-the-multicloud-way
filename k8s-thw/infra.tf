@@ -6,6 +6,18 @@ variable "region" {
   default = "us-west1"
 }
 
+variable "zone" {
+  default = "a"
+}
+
+variable "zones" {
+  default = {
+    "0" = "a"
+    "1" = "b"
+    "2" = "c"
+  }
+}
+
 variable "cidr-nodes" {
   default = "10.240.0.0/24"
 }
@@ -87,4 +99,69 @@ output "allow-external-self_link" {
 resource "google_compute_address" "api-server" {
   name = "${var.env}"
   region = "${var.region}"
+}
+output "api-server-self_link" {
+  value = "${google_compute_address.api-server.self_link}"
+}
+output "api-server-address" {
+  value = "${google_compute_address.api-server.address}"
+}
+
+resource "google_compute_instance" "master-nodes" {
+  count = 3
+  name         = "${var.env}-m-${count.index}"
+  machine_type = "n1-standard-1"
+  // future - use conditional to spread across zones by index
+  zone         = "${var.region}-${var.zone}"
+
+  tags = ["${var.env}", "master"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      size = 200
+    }
+  }
+
+  can_ip_forward = true
+
+  network_interface {
+    network = "${google_compute_subnetwork.subnet-nodes.self_link}"
+    address = "10.240.0.1${count.index}"
+  }
+
+  service_account {
+    scopes = ["compute-rw", "storage-ro", "service-management", "service-control", "logging-write", "monitoring"]
+  }
+}
+
+resource "google_compute_instance" "worker-nodes" {
+  count = 3
+  name         = "${var.env}-w-${count.index}"
+  machine_type = "n1-standard-1"
+  zone         = "${var.region}-${var.zone}"
+
+  tags = ["${var.env}", "worker"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      size = 200
+    }
+  }
+
+  can_ip_forward = true
+
+  network_interface {
+    network = "${google_compute_subnetwork.subnet-nodes.self_link}"
+    address = "10.240.0.2${count.index}"
+  }
+
+  service_account {
+    scopes = ["compute-rw", "storage-ro", "service-management", "service-control", "logging-write", "monitoring"]
+  }
+
+  metadata {
+    pod-cidr = "10.200.${count.index}.0/24"
+  }
 }
