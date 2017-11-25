@@ -128,6 +128,9 @@ resource "google_compute_instance" "master-nodes" {
   network_interface {
     network = "${google_compute_subnetwork.subnet-nodes.self_link}"
     address = "10.240.0.1${count.index}"
+    access_config {
+      // Ephemeral Public IP
+    }
   }
 
   service_account {
@@ -155,6 +158,9 @@ resource "google_compute_instance" "worker-nodes" {
   network_interface {
     network = "${google_compute_subnetwork.subnet-nodes.self_link}"
     address = "10.240.0.2${count.index}"
+    access_config {
+      // Ephemeral Public IP
+    }
   }
 
   service_account {
