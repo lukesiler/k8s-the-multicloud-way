@@ -96,16 +96,16 @@ output "allow-external-self_link" {
   value = "${google_compute_firewall.allow-external.self_link}"
 }
 
-resource "google_compute_address" "api-server" {
-  name = "${var.env}"
-  region = "${var.region}"
-}
-output "api-server-self_link" {
-  value = "${google_compute_address.api-server.self_link}"
-}
-output "api-server-address" {
-  value = "${google_compute_address.api-server.address}"
-}
+//resource "google_compute_address" "api-server" {
+//  name = "${var.env}"
+//  region = "${var.region}"
+//}
+//output "api-server-self_link" {
+//  value = "${google_compute_address.api-server.self_link}"
+//}
+//output "api-server-address" {
+//  value = "${google_compute_address.api-server.address}"
+//}
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
@@ -126,7 +126,7 @@ resource "google_compute_instance" "master-nodes" {
   can_ip_forward = true
 
   network_interface {
-    network = "${google_compute_subnetwork.subnet-nodes.self_link}"
+    subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
     address = "10.240.0.1${count.index}"
     access_config {
       // Ephemeral Public IP
@@ -156,7 +156,7 @@ resource "google_compute_instance" "worker-nodes" {
   can_ip_forward = true
 
   network_interface {
-    network = "${google_compute_subnetwork.subnet-nodes.self_link}"
+    subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
     address = "10.240.0.2${count.index}"
     access_config {
       // Ephemeral Public IP
