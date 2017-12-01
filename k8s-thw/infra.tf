@@ -171,3 +171,22 @@ resource "google_compute_instance" "worker-nodes" {
     pod-cidr = "10.200.${count.index}.0/24"
   }
 }
+
+resource "google_compute_target_pool" "master-node-pool" {
+  name = "${var.env}-masters-pool"
+
+  instances = [
+    "${google_compute_instance.master-nodes.self_link}
+  ]
+
+  health_checks = [
+    "${google_compute_http_health_check.default.name}",
+  ]
+}
+
+resource "google_compute_http_health_check" "default" {
+  name               = "default"
+  request_path       = "/"
+  check_interval_sec = 1
+  timeout_sec        = 1
+}
