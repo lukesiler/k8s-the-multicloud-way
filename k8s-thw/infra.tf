@@ -236,8 +236,8 @@ resource "google_compute_instance" "master-nodes" {
     inline = [
       "chmod +x ~/*.sh",
       "~/12-get-master-bits.sh",
-      "~/13-setup-etcd.sh" //,
-//      "~/14-setup-k8s-ctrl.sh"
+      "~/13-setup-etcd.sh",
+      "~/14-setup-k8s-ctrl.sh"
     ]
 
     connection {
