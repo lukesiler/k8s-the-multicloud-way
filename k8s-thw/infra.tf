@@ -22,6 +22,21 @@ variable "cidr-nodes" {
   default = "10.240.0.0/24"
 }
 
+variable "keypairs" {
+  default = {
+    "ca" = "ca"
+    "api" = "kubernetes"
+  }
+}
+
+variable "ssh-user" {
+  default = "siler"
+}
+
+variable "ssh-key-path" {
+  default = "~/.ssh/google_compute_engine"
+}
+
 provider "google" {
   credentials = "${file("../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json")}"
   project     = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
@@ -136,10 +151,106 @@ resource "google_compute_instance" "master-nodes" {
   service_account {
     scopes = ["compute-rw", "storage-ro", "service-management", "service-control", "logging-write", "monitoring"]
   }
+
+  provisioner "file" {
+    source      = "pki/${var.keypairs["ca"]}.pem"
+    destination = "${var.keypairs["ca"]}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.keypairs["ca"]}-key.pem"
+    destination = "${var.keypairs["ca"]}-key.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.keypairs["api"]}.pem"
+    destination = "${var.keypairs["api"]}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.keypairs["api"]}-key.pem"
+    destination = "${var.keypairs["api"]}-key.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/encryption-config.yaml"
+    destination = "encryption-config.yaml"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/12-get-master-bits.sh"
+    destination = "12-get-master-bits.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/13-setup-etcd.sh"
+    destination = "13-setup-etcd.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/14-setup-k8s-ctrl.sh"
+    destination = "14-setup-k8s-ctrl.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x ~/*.sh",
+      "~/12-get-master-bits.sh",
+      "~/13-setup-etcd.sh" //,
+//      "~/14-setup-k8s-ctrl.sh"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
 }
 
 resource "google_compute_instance" "worker-nodes" {
   count = 3
+
   name         = "${var.env}-w-${count.index}"
   machine_type = "n1-standard-1"
   zone         = "${var.region}-${var.zone}"
@@ -169,6 +280,57 @@ resource "google_compute_instance" "worker-nodes" {
 
   metadata {
     pod-cidr = "10.200.${count.index}.0/24"
+  }
+
+  provisioner "file" {
+    source      = "pki/${var.keypairs["ca"]}.pem"
+    destination = "${var.keypairs["ca"]}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.env}-w-${count.index}.pem"
+    destination = "${var.env}-w-${count.index}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.env}-w-${count.index}-key.pem"
+    destination = "${var.env}-w-${count.index}-key.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/${var.env}-w-${count.index}.kubeconfig"
+    destination = "${var.env}-w-${count.index}.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/kube-proxy.kubeconfig"
+    destination = "kube-proxy.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
   }
 }
 
