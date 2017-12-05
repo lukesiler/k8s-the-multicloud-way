@@ -248,6 +248,39 @@ resource "google_compute_instance" "master-nodes" {
   }
 }
 
+resource "null_resource" "master-nodes-api-rbac" {
+  # run RBAC config on just one of the masters after waiting for k8s API healthz
+  count = "1"
+
+  provisioner "file" {
+    source      = "config/15-config-rbac-kubelet.sh"
+    destination = "15-config-rbac-kubelet.sh"
+
+    connection {
+      // use index of the last master node for best chance that others are up and configured
+      host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x ~/15-config-rbac-kubelet.sh",
+      "~/15-config-rbac-kubelet.sh"
+    ]
+
+    connection {
+      // use index of the last master node for best chance that others are up and configured
+      host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+}
+
 resource "google_compute_instance" "worker-nodes" {
   count = 3
 
