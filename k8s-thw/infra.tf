@@ -21,6 +21,20 @@ variable "zones" {
 variable "cidr-nodes" {
   default = "10.240.0.0/24"
 }
+variable "master-node-ip-prefix" {
+  default = "10.240.0.1"
+}
+variable "worker-node-ip-prefix" {
+  default = "10.240.0.2"
+}
+
+variable "cidr-pods" {
+  default = {
+    "0" = "10.200.0.0/24"
+    "1" = "10.200.1.0/24"
+    "2" = "10.200.2.0/24"
+  }
+}
 
 variable "keypairs" {
   default = {
@@ -84,7 +98,7 @@ resource "google_compute_firewall" "allow-internal" {
     protocol = "udp"
   }
 
-  source_ranges = ["10.240.0.0/24", "10.200.0.0/16"]
+  source_ranges = ["${var.cidr-nodes}", "10.200.0.0/16"]
 }
 
 output "allow-internal-self_link" {
@@ -171,7 +185,7 @@ resource "google_compute_instance" "master-nodes" {
 
   network_interface {
     subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "10.240.0.1${count.index}"
+    address = "${var.master-node-ip-prefix}${count.index}"
     access_config {
       // Ephemeral Public IP
     }
@@ -330,7 +344,7 @@ resource "google_compute_instance" "worker-nodes" {
 
   network_interface {
     subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "10.240.0.2${count.index}"
+    address = "${var.worker-node-ip-prefix}${count.index}"
     access_config {
       // Ephemeral Public IP
     }
@@ -341,7 +355,7 @@ resource "google_compute_instance" "worker-nodes" {
   }
 
   metadata {
-    pod-cidr = "10.200.${count.index}.0/24"
+    pod-cidr = "${lookup(var.cidr-pods, count.index)}"
   }
 
   provisioner "file" {
@@ -451,6 +465,17 @@ resource "google_compute_instance" "worker-nodes" {
   }
 }
 
+# TODO: find a way to express dependency on worker-nodes
+resource "google_compute_route" "worker-pod-route" {
+  count = 3
+
+  name        = "kubernetes-route-worker-${count.index}-pods"
+  dest_range  = "${lookup(var.cidr-pods, count.index)}"
+  network     = "${google_compute_network.net.self_link}"
+  next_hop_ip = "${var.worker-node-ip-prefix}${count.index}"
+  priority = 1000
+}
+
 resource "google_compute_target_pool" "master-node-pool" {
   name = "${var.env}-masters-pool"
 
@@ -470,7 +495,7 @@ resource "google_compute_http_health_check" "default" {
 }
 */
 
-resource "google_compute_forwarding_rule" "default" {
+resource "google_compute_forwarding_rule" "api-server-lb" {
   name       = "${var.env}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
   port_range = "6443"
