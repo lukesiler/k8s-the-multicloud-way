@@ -111,16 +111,45 @@ output "allow-external-self_link" {
   value = "${google_compute_firewall.allow-external.self_link}"
 }
 
-//resource "google_compute_address" "api-server" {
-//  name = "${var.env}"
-//  region = "${var.region}"
-//}
-//output "api-server-self_link" {
-//  value = "${google_compute_address.api-server.self_link}"
-//}
-//output "api-server-address" {
-//  value = "${google_compute_address.api-server.address}"
-//}
+resource "google_compute_address" "api-server" {
+ name = "${var.env}"
+ region = "${var.region}"
+}
+output "api-server-self_link" {
+ value = "${google_compute_address.api-server.self_link}"
+}
+output "api-server-address" {
+ value = "${google_compute_address.api-server.address}"
+}
+output "api-server-curl" {
+ value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:6443/version"
+}
+
+resource "null_resource" "pki-keypairs" {
+  count = "1"
+
+  provisioner "local-exec" {
+    command = "cd pki;./1-gen-ca.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd pki;./2-gen-admin.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd pki;./3-gen-worker-kubelets.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd pki;./4-gen-kube-proxy.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd pki;./5-gen-kube-api-server.sh ${google_compute_address.api-server.address}"
+  }
+  provisioner "local-exec" {
+    command = "cd pki;./8-gen-encrypt-key.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd config;./10-gen-config.sh ${google_compute_address.api-server.address}"
+  }
+}
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
@@ -390,4 +419,5 @@ resource "google_compute_forwarding_rule" "default" {
   name       = "${var.env}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
   port_range = "6443"
+  ip_address = "${google_compute_address.api-server.self_link}"
 }

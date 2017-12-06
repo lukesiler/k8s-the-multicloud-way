@@ -1,5 +1,5 @@
 #!/bin/bash
-ENV=siler-k8s-thw
+
 # generate config for encrypting secrets at rest
 ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
 cat > encryption-config.yaml <<EOF

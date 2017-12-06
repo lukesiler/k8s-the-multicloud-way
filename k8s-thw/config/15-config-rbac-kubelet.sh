@@ -13,8 +13,8 @@ msg() {
 #
 # If the url doesn't respond, we fail.
 waitForUrl() {
-    url=$1
-    secondsToTry=$2
+    url=${1}
+    secondsToTry=${2}
 
     if [ -z "${secondsToTry}" ]; then
         secondsToTry=30

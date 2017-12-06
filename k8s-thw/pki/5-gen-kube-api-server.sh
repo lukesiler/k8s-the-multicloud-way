@@ -1,7 +1,15 @@
 #!/bin/bash
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe siler-k8s-thw \
-  --region $(gcloud config get-value compute/region) \
-  --format 'value(address)')
+
+ENV=siler-k8s-thw
+KUBERNETES_PUBLIC_ADDRESS=${1}
+
+if [ -z "${KUBERNETES_PUBLIC_ADDRESS}" ]; then
+  # if not provided then get via CLI
+  KUBERNETES_PUBLIC_ADDRESS=${(gcloud compute addresses describe ${ENV} \
+    --region $(gcloud config get-value compute/region) \
+    --format 'value(address)')}
+fi
+
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
