@@ -394,6 +394,61 @@ resource "google_compute_instance" "worker-nodes" {
       private_key = "${file("${var.ssh-key-path}")}"
     }
   }
+  provisioner "file" {
+    source      = "config/kube-proxy.kubeconfig"
+    destination = "kube-proxy.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/16-get-worker-bits.sh"
+    destination = "16-get-worker-bits.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/17-install-worker-bits.sh"
+    destination = "17-install-worker-bits.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/18-config-worker.sh"
+    destination = "18-config-worker.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get -y install socat",
+      "chmod +x ~/*.sh",
+      "./16-get-worker-bits.sh",
+      "./17-install-worker-bits.sh",
+      "./18-config-worker.sh"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "${var.ssh-user}"
+      private_key = "${file("${var.ssh-key-path}")}"
+    }
+  }
 }
 
 resource "google_compute_target_pool" "master-node-pool" {
