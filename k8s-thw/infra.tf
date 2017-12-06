@@ -467,7 +467,7 @@ resource "google_compute_instance" "worker-nodes" {
 
 # TODO: find a way to express dependency on worker-nodes
 resource "google_compute_route" "worker-pod-route" {
-  count = 3
+  count = "${google_compute_instance.worker-nodes.count}"
 
   name        = "kubernetes-route-worker-${count.index}-pods"
   dest_range  = "${lookup(var.cidr-pods, count.index)}"
