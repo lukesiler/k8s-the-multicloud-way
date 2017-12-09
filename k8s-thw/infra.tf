@@ -138,6 +138,13 @@ output "api-server-address" {
 output "api-server-curl" {
  value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:6443/version"
 }
+# mac curl has trouble with PEM format
+output "convert-to-pkcs12-for-mac-curl" {
+ value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
+}
+output "curl-as-admin" {
+ value = "curl --cacert pki/ca.pem -E pki/admin.p12:none https://${google_compute_address.api-server.address}:6443/api/v1/nodes"
+}
 
 resource "null_resource" "pki-keypairs" {
   count = "1"
