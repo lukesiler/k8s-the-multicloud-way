@@ -465,7 +465,6 @@ resource "google_compute_instance" "worker-nodes" {
   }
 }
 
-# TODO: find a way to express dependency on worker-nodes
 resource "google_compute_route" "worker-pod-route" {
   count = "${google_compute_instance.worker-nodes.count}"
 
@@ -500,4 +499,11 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
   port_range = "6443"
   ip_address = "${google_compute_address.api-server.self_link}"
+
+  provisioner "local-exec" {
+    command = "cd config;./19-setup-kubectl-local.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd config;./20-setup-dns.sh"
+  }
 }
