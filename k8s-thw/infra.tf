@@ -145,6 +145,9 @@ output "convert-to-pkcs12-for-mac-curl" {
 output "curl-as-admin" {
  value = "curl --cacert pki/ca.pem -E pki/admin.p12:none https://${google_compute_address.api-server.address}:6443/api/v1/nodes"
 }
+output "create-servers" {
+  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
+}
 
 resource "null_resource" "pki-keypairs" {
   count = "1"
