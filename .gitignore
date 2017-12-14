@@ -1,0 +1,11 @@
+.terraform
+*.tfstate*
+*.pem
+*.csr
+*.p12
+*.kubeconfig
+siler*.json
+encryption-config.yaml
+*.tfvars
+*.pb.go
+.DS_Store
