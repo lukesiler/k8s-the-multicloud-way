@@ -1,20 +1,28 @@
 #!/bin/bash
+hostname-prefix=siler-k8s-thw-w-
+algo=rsa
+size=2048
+country=US
+city=Shoreline
+state=Washington
+ip-prefix=10.240.0.2
+
 for i in 0 1 2; do
-prefix=siler-k8s-thw-w-
-cat > ${prefix}${i}-csr.json <<EOF
+hostname=${hostname-prefix}${i}
+cat > ${hostname}-csr.json <<EOF
 {
-  "CN": "system:node:${prefix}${i}",
+  "CN": "system:node:${hostname}",
   "key": {
-    "algo": "rsa",
-    "size": 2048
+    "algo": "${algo}",
+    "size": ${size}
   },
   "names": [
     {
-      "C": "US",
-      "L": "Shoreline",
+      "C": "${country}",
+      "L": "${city}",
       "O": "system:nodes",
       "OU": "Kubernetes The Hard Way",
-      "ST": "Washington"
+      "ST": "${state}"
     }
   ]
 }
@@ -24,7 +32,7 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${prefix}${i},10.240.0.2${i} \
+  -hostname=${hostname},${ip-prefix}${i} \
   -profile=kubernetes \
-  ${prefix}${i}-csr.json | cfssljson -bare ${prefix}${i}
+  ${hostname}-csr.json | cfssljson -bare ${hostname}
 done
