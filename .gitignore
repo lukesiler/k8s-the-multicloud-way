@@ -9,3 +9,5 @@ encryption-config.yaml
 *.tfvars
 *.pb.go
 .DS_Store
+ca-csr.json
+admin-csr.json

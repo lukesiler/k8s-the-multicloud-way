@@ -1,28 +1,30 @@
 #!/bin/bash
-hostname-prefix=siler-k8s-thw-w-
-algo=rsa
-size=2048
-country=US
-city=Shoreline
-state=Washington
-ip-prefix=10.240.0.2
+json=$(eval "cat ../in.json")
+envName=$(echo ${json} | jq -r '.env.name')
+envPrefix=$(echo ${json} | jq -r '.env.prefix')
+pkiAlgo=$(echo ${json} | jq -r '.pki.algo')
+pkiSize=$(echo ${json} | jq -r '.pki.size')
+geoCity=$(echo ${json} | jq -r '.geo.city')
+geoState=$(echo ${json} | jq -r '.geo.state')
+geoCountry=$(echo ${json} | jq -r '.geo.country')
+workerPrimIpPrefix=$(echo ${json} | jq -r '.worker.primaryIpPrefix')
 
 for i in 0 1 2; do
-hostname=${hostname-prefix}${i}
+hostname=${envPrefix}-w-${i}
 cat > ${hostname}-csr.json <<EOF
 {
   "CN": "system:node:${hostname}",
   "key": {
-    "algo": "${algo}",
-    "size": ${size}
+    "algo": "${pkiAlgo}",
+    "size": ${pkiSize}
   },
   "names": [
     {
-      "C": "${country}",
-      "L": "${city}",
+      "C": "${geoCountry}",
+      "L": "${geoCity}",
       "O": "system:nodes",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "${state}"
+      "OU": "${envName}",
+      "ST": "${geoState}"
     }
   ]
 }
@@ -32,7 +34,7 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${hostname},${ip-prefix}${i} \
+  -hostname=${hostname},${workerPrimIpPrefix}${i} \
   -profile=kubernetes \
   ${hostname}-csr.json | cfssljson -bare ${hostname}
 done
