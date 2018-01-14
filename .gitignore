@@ -11,3 +11,4 @@ encryption-config.yaml
 .DS_Store
 ca-csr.json
 admin-csr.json
+kube-proxy-csr.json
