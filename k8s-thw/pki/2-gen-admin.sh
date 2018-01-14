@@ -1,4 +1,6 @@
 #!/bin/bash
+# generate admin user keypair
+
 json=$(eval "cat ../in.json")
 envName=$(echo ${json} | jq -r '.env.name')
 pkiAlgo=$(echo ${json} | jq -r '.pki.algo')

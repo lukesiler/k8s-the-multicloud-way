@@ -12,3 +12,4 @@ encryption-config.yaml
 ca-csr.json
 admin-csr.json
 kube-proxy-csr.json
+kubernetes-csr.json
