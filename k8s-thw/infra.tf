@@ -24,8 +24,14 @@ variable "cidr-nodes" {
 variable "master-node-ip-prefix" {
   default = "10.240.0.1"
 }
+variable "master-name-qualifier" {
+  default = "-m-"
+}
 variable "worker-node-ip-prefix" {
   default = "10.240.0.2"
+}
+variable "worker-name-qualifier" {
+  default = "-w-"
 }
 
 variable "cidr-pods" {
@@ -177,7 +183,7 @@ resource "null_resource" "pki-keypairs" {
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
-  name         = "${var.env}-m-${count.index}"
+  name         = "${var.env}${var.master-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
   // future - use conditional to spread across zones by index
   zone         = "${var.region}-${var.zone}"
@@ -289,7 +295,7 @@ resource "google_compute_instance" "master-nodes" {
     inline = [
       "chmod +x ~/*.sh",
       "~/12-get-master-bits.sh",
-      "~/13-setup-etcd.sh",
+      "~/13-setup-etcd.sh ${count.index} ${var.master-node-ip-prefix} ${var.master-name-qualifier}",
       "~/14-setup-k8s-ctrl.sh"
     ]
 
@@ -337,7 +343,7 @@ resource "null_resource" "master-nodes-api-rbac" {
 resource "google_compute_instance" "worker-nodes" {
   count = 3
 
-  name         = "${var.env}-w-${count.index}"
+  name         = "${var.env}${var.worker-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
   zone         = "${var.region}-${var.zone}"
 
@@ -379,8 +385,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.env}-w-${count.index}.pem"
-    destination = "${var.env}-w-${count.index}.pem"
+    source      = "pki/${var.env}${var.worker-name-qualifier}${count.index}.pem"
+    destination = "${var.env}${var.worker-name-qualifier}${count.index}.pem"
 
     connection {
       type     = "ssh"
@@ -389,8 +395,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.env}-w-${count.index}-key.pem"
-    destination = "${var.env}-w-${count.index}-key.pem"
+    source      = "pki/${var.env}${var.worker-name-qualifier}${count.index}-key.pem"
+    destination = "${var.env}${var.worker-name-qualifier}${count.index}-key.pem"
 
     connection {
       type     = "ssh"
@@ -399,8 +405,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/${var.env}-w-${count.index}.kubeconfig"
-    destination = "${var.env}-w-${count.index}.kubeconfig"
+    source      = "config/${var.env}${var.worker-name-qualifier}${count.index}.kubeconfig"
+    destination = "${var.env}${var.worker-name-qualifier}${count.index}.kubeconfig"
 
     connection {
       type     = "ssh"

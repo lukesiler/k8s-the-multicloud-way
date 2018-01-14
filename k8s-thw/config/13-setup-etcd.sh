@@ -1,14 +1,17 @@
 #!/bin/bash
-ENV=siler-k8s-thw
+# configure etcd on each k8s master
+
+INDEX=${1}
+IP_PREFIX=${2}
+NAME_PREFIX=${3}
+
+INTERNAL_IP=${IP_PREFIX}${INDEX}
+ETCD_NAME=${NAME_PREFIX}${INDEX}
 
 tar -xvf etcd-v3.*-linux-amd64.tar.gz
 sudo mv etcd-v3.*-linux-amd64/etcd* /usr/local/bin/
 sudo mkdir -p /etc/etcd /var/lib/etcd
 sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
-
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
-ETCD_NAME=$(hostname -s)
 
 cat > etcd.service <<EOF
 [Unit]
@@ -31,7 +34,7 @@ ExecStart=/usr/local/bin/etcd \\
   --listen-client-urls https://${INTERNAL_IP}:2379,http://127.0.0.1:2379 \\
   --advertise-client-urls https://${INTERNAL_IP}:2379 \\
   --initial-cluster-token etcd-cluster-0 \\
-  --initial-cluster ${ENV}-m-0=https://10.240.0.10:2380,${ENV}-m-1=https://10.240.0.11:2380,${ENV}-m-2=https://10.240.0.12:2380 \\
+  --initial-cluster ${NAME_PREFIX}0=https://${IP_PREFIX}0:2380,${NAME_PREFIX}1=https://${IP_PREFIX}1:2380,${NAME_PREFIX}2=https://${IP_PREFIX}2:2380 \\
   --initial-cluster-state new \\
   --data-dir=/var/lib/etcd
 Restart=on-failure

@@ -4,11 +4,12 @@
 json=$(eval "cat ../in.json")
 envPrefix=$(echo ${json} | jq -r '.env.prefix')
 apiServerPort=$(echo ${json} | jq -r '.master.apiServerPort')
+workerNameQualifier=$(echo ${json} | jq -r '.worker.nameQualifier')
 
 # access api server at LB IP so it is highly available
 KUBERNETES_PUBLIC_ADDRESS=${1}
 
-prefix=${envPrefix}-w-
+prefix=${envPrefix}${workerNameQualifier}
 
 # generate kubelet config files
 for instance in ${prefix}0 ${prefix}1 ${prefix}2; do

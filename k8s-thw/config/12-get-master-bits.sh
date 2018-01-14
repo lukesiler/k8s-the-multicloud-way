@@ -1,3 +1,6 @@
+#!/bin/bash
+# download binaries to master
+
 wget -q --https-only --timestamping \
   "https://github.com/coreos/etcd/releases/download/v3.2.8/etcd-v3.2.8-linux-amd64.tar.gz" \
   "https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kube-apiserver" \
