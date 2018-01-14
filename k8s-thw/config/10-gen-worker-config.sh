@@ -1,4 +1,5 @@
 #!/bin/bash
+# generate kubelet and kubeproxy config files for workers
 
 json=$(eval "cat ../in.json")
 envPrefix=$(echo ${json} | jq -r '.env.prefix')
