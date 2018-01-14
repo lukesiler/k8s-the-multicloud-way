@@ -4,12 +4,8 @@
 *.csr
 *.p12
 *.kubeconfig
-siler*.json
 encryption-config.yaml
 *.tfvars
 *.pb.go
 .DS_Store
-ca-csr.json
-admin-csr.json
-kube-proxy-csr.json
-kubernetes-csr.json
+*-csr.json
