@@ -1,24 +1,20 @@
 #!/bin/bash
-ENV=siler-k8s-thw
 
-# TODO: change to use private internal address for kubelet access to API server
+json=$(eval "cat ../in.json")
+envPrefix=$(echo ${json} | jq -r '.env.prefix')
+apiServerPort=$(echo ${json} | jq -r '.master.apiServerPort')
 
 # access api server at LB IP so it is highly available
 KUBERNETES_PUBLIC_ADDRESS=${1}
 
-if [ -z "${KUBERNETES_PUBLIC_ADDRESS}" ]; then
-  # if not provided then get via CLI
-  KUBERNETES_PUBLIC_ADDRESS=${(gcloud compute addresses describe ${ENV} \
-    --region $(gcloud config get-value compute/region) \
-    --format 'value(address)')}
-fi
+prefix=${envPrefix}-w-
 
 # generate kubelet config files
-for instance in ${ENV}-w-0 ${ENV}-w-1 ${ENV}-w-2; do
+for instance in ${prefix}0 ${prefix}1 ${prefix}2; do
   kubectl config set-cluster kubernetes \
     --certificate-authority=../pki/ca.pem \
     --embed-certs=true \
-    --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
+    --server=https://${KUBERNETES_PUBLIC_ADDRESS}:${apiServerPort} \
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config set-credentials system:node:${instance} \
@@ -39,7 +35,7 @@ done
 kubectl config set-cluster kubernetes \
   --certificate-authority=../pki/ca.pem \
   --embed-certs=true \
-  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
+  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:${apiServerPort} \
   --kubeconfig=kube-proxy.kubeconfig
 kubectl config set-credentials kube-proxy \
   --client-certificate=../pki/kube-proxy.pem \

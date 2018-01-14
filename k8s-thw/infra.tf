@@ -171,7 +171,7 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;./8-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;./10-gen-config.sh ${google_compute_address.api-server.address}"
+    command = "cd config;./10-gen-worker-config.sh ${google_compute_address.api-server.address}"
   }
 }
 
