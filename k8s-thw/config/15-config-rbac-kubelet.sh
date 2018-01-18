@@ -1,4 +1,5 @@
 #!/bin/bash
+# configure RBAC policy that kubelet will use to access API server - run on only one of the masters after /healthz is successful
 
 # print messages with timestamp prefix
 msg() {
