@@ -18,6 +18,14 @@ variable "zones" {
   }
 }
 
+variable "gcp-project" {
+  default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
+}
+
+variable "gcp-credential" {
+  default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
+}
+
 variable "cidr-nodes" {
   default = "10.240.0.0/24"
 }
@@ -72,15 +80,15 @@ variable "ssh-key-path" {
 }
 
 provider "google" {
-  credentials = "${file("../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json")}"
-  project     = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
+  credentials = "${file("${var.gcp-credential}")}"
+  project     = "${var.gcp-project}"
   region      = "${var.region}"
 }
 
 resource "google_compute_network" "net" {
   name                    = "${var.env}"
   auto_create_subnetworks = "false"
-  description             = "Luke's Kubernetes the Hard Way, v1"
+  description             = "Kubernetes the Hard Way - ${var.env}"
 }
 
 output "net-gtwy" {
