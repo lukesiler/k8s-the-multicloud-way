@@ -196,10 +196,10 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;./5-gen-kube-api-server.sh ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
-    command = "cd pki;./8-gen-encrypt-key.sh"
+    command = "cd pki;./6-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;./10-gen-worker-config.sh ${google_compute_address.api-server.address}"
+    command = "cd config;./7-gen-worker-config.sh ${google_compute_address.api-server.address}"
   }
 }
 
@@ -284,8 +284,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/12-get-master-bits.sh"
-    destination = "12-get-master-bits.sh"
+    source      = "config/8-get-master-bits.sh"
+    destination = "8-get-master-bits.sh"
 
     connection {
       type     = "ssh"
@@ -294,8 +294,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/13-setup-etcd.sh"
-    destination = "13-setup-etcd.sh"
+    source      = "config/9-setup-etcd.sh"
+    destination = "9-setup-etcd.sh"
 
     connection {
       type     = "ssh"
@@ -304,8 +304,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/14-setup-k8s-ctrl.sh"
-    destination = "14-setup-k8s-ctrl.sh"
+    source      = "config/10-setup-k8s-ctrl.sh"
+    destination = "10-setup-k8s-ctrl.sh"
 
     connection {
       type     = "ssh"
@@ -316,9 +316,9 @@ resource "google_compute_instance" "master-nodes" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/*.sh",
-      "~/12-get-master-bits.sh",
-      "~/13-setup-etcd.sh ${count.index} ${var.master-node-ip-prefix} ${var.master-name-qualifier}",
-      "~/14-setup-k8s-ctrl.sh ${count.index} ${var.master-node-ip-prefix} ${var.cidr-service-net} ${var.cidr-pod-net}"
+      "~/8-get-master-bits.sh",
+      "~/9-setup-etcd.sh ${count.index} ${var.master-node-ip-prefix} ${var.master-name-qualifier}",
+      "~/10-setup-k8s-ctrl.sh ${count.index} ${var.master-node-ip-prefix} ${var.cidr-service-net} ${var.cidr-pod-net}"
     ]
 
     connection {
@@ -334,8 +334,8 @@ resource "null_resource" "master-nodes-api-rbac" {
   count = "1"
 
   provisioner "file" {
-    source      = "config/15-config-rbac-kubelet.sh"
-    destination = "15-config-rbac-kubelet.sh"
+    source      = "config/11-config-rbac-kubelet.sh"
+    destination = "11-config-rbac-kubelet.sh"
 
     connection {
       // use index of the last master node for best chance that others are up and configured
@@ -348,8 +348,8 @@ resource "null_resource" "master-nodes-api-rbac" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x ~/15-config-rbac-kubelet.sh",
-      "~/15-config-rbac-kubelet.sh"
+      "chmod +x ~/11-config-rbac-kubelet.sh",
+      "~/11-config-rbac-kubelet.sh"
     ]
 
     connection {
@@ -457,8 +457,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/16-get-worker-bits.sh"
-    destination = "16-get-worker-bits.sh"
+    source      = "config/12-get-worker-bits.sh"
+    destination = "12-get-worker-bits.sh"
 
     connection {
       type     = "ssh"
@@ -467,8 +467,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/17-install-worker-bits.sh"
-    destination = "17-install-worker-bits.sh"
+    source      = "config/13-install-worker-bits.sh"
+    destination = "13-install-worker-bits.sh"
 
     connection {
       type     = "ssh"
@@ -477,8 +477,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/18-config-worker.sh"
-    destination = "18-config-worker.sh"
+    source      = "config/14-config-worker.sh"
+    destination = "14-config-worker.sh"
 
     connection {
       type     = "ssh"
@@ -490,9 +490,9 @@ resource "google_compute_instance" "worker-nodes" {
     inline = [
       "sudo apt-get -y install socat",
       "chmod +x ~/*.sh",
-      "./16-get-worker-bits.sh",
-      "./17-install-worker-bits.sh",
-      "./18-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
+      "./12-get-worker-bits.sh",
+      "./13-install-worker-bits.sh",
+      "./14-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
     ]
 
     connection {
@@ -539,9 +539,9 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
-    command = "cd config;./19-setup-kubectl-local.sh ${var.env} ${google_compute_address.api-server.address}"
+    command = "cd config;./15-setup-kubectl-local.sh ${var.env} ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
-    command = "cd config;./20-setup-dns.sh ${var.cluster-dns}"
+    command = "cd config;./16-setup-dns.sh ${var.cluster-dns}"
   }
 }
