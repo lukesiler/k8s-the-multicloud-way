@@ -34,12 +34,19 @@ variable "worker-name-qualifier" {
   default = "-w-"
 }
 
+variable "cidr-pod-net" {
+  default = "10.200.0.0/16"
+}
 variable "cidr-pods" {
   default = {
     "0" = "10.200.0.0/24"
     "1" = "10.200.1.0/24"
     "2" = "10.200.2.0/24"
   }
+}
+
+variable "cidr-service-net" {
+  default = "10.32.0.0/24"
 }
 
 variable "keypairs" {
@@ -104,7 +111,7 @@ resource "google_compute_firewall" "allow-internal" {
     protocol = "udp"
   }
 
-  source_ranges = ["${var.cidr-nodes}", "10.200.0.0/16"]
+  source_ranges = ["${var.cidr-nodes}", "${var.cidr-pod-net}"]
 }
 
 output "allow-internal-self_link" {
@@ -296,7 +303,7 @@ resource "google_compute_instance" "master-nodes" {
       "chmod +x ~/*.sh",
       "~/12-get-master-bits.sh",
       "~/13-setup-etcd.sh ${count.index} ${var.master-node-ip-prefix} ${var.master-name-qualifier}",
-      "~/14-setup-k8s-ctrl.sh"
+      "~/14-setup-k8s-ctrl.sh ${count.index} ${var.master-node-ip-prefix} ${var.cidr-service-net} ${var.cidr-pod-net}"
     ]
 
     connection {

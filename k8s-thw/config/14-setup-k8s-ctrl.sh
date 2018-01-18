@@ -1,14 +1,19 @@
 #!/bin/bash
+# configure k8s API server, controller manager and scheduler on each k8s master
+
+INDEX=${1}
+IP_PREFIX=${2}
+CLUSTER_CIDR=${3}
+POD_CIDR=${4}
+
+# use private IP to advertise API
+INTERNAL_IP=${IP_PREFIX}${INDEX}
 
 chmod +x kube-apiserver kube-controller-manager kube-scheduler kubectl
 sudo mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/local/bin/
 
 sudo mkdir -p /var/lib/kubernetes/
 sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem encryption-config.yaml /var/lib/kubernetes/
-
-# use private IP to advertise API
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
 
 # generate kube-apiserver service config
 cat > kube-apiserver.service <<EOF
@@ -33,7 +38,7 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --etcd-cafile=/var/lib/kubernetes/ca.pem \\
   --etcd-certfile=/var/lib/kubernetes/kubernetes.pem \\
   --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem \\
-  --etcd-servers=https://10.240.0.10:2379,https://10.240.0.11:2379,https://10.240.0.12:2379 \\
+  --etcd-servers=https://${IP_PREFIX}0:2379,https://${IP_PREFIX}1:2379,https://${IP_PREFIX}2:2379 \\
   --event-ttl=1h \\
   --experimental-encryption-provider-config=/var/lib/kubernetes/encryption-config.yaml \\
   --insecure-bind-address=127.0.0.1 \\
@@ -43,7 +48,7 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --kubelet-https=true \\
   --runtime-config=api/all \\
   --service-account-key-file=/var/lib/kubernetes/ca-key.pem \\
-  --service-cluster-ip-range=10.32.0.0/24 \\
+  --service-cluster-ip-range=${CLUSTER_CIDR} \\
   --service-node-port-range=30000-32767 \\
   --tls-ca-file=/var/lib/kubernetes/ca.pem \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
@@ -65,7 +70,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/local/bin/kube-controller-manager \\
   --address=0.0.0.0 \\
-  --cluster-cidr=10.200.0.0/16 \\
+  --cluster-cidr=${POD_CIDR} \\
   --cluster-name=kubernetes \\
   --cluster-signing-cert-file=/var/lib/kubernetes/ca.pem \\
   --cluster-signing-key-file=/var/lib/kubernetes/ca-key.pem \\
@@ -73,7 +78,7 @@ ExecStart=/usr/local/bin/kube-controller-manager \\
   --master=http://127.0.0.1:8080 \\
   --root-ca-file=/var/lib/kubernetes/ca.pem \\
   --service-account-private-key-file=/var/lib/kubernetes/ca-key.pem \\
-  --service-cluster-ip-range=10.32.0.0/24 \\
+  --service-cluster-ip-range=${CLUSTER_CIDR} \\
   --v=2
 Restart=on-failure
 RestartSec=5
