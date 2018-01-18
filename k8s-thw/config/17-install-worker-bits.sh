@@ -1,4 +1,5 @@
 #!/bin/bash
+# install binaries to worker
 
 sudo mkdir -p \
   /etc/cni/net.d \

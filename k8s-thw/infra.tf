@@ -480,7 +480,7 @@ resource "google_compute_instance" "worker-nodes" {
       "chmod +x ~/*.sh",
       "./16-get-worker-bits.sh",
       "./17-install-worker-bits.sh",
-      "./18-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${cidr-net-pod} ${lookup(var.cidr-pods, count.index)}"
+      "./18-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
     ]
 
     connection {
