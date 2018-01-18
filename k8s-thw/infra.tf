@@ -52,6 +52,10 @@ variable "cluster-dns" {
   default = "10.32.0.10"
 }
 
+variable "api-server-port" {
+  default = "6443"
+}
+
 variable "keypairs" {
   default = {
     "ca" = "ca"
@@ -131,7 +135,7 @@ resource "google_compute_firewall" "allow-external" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "6443"]
+    ports = ["22", "${var.api-server-port}"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -152,14 +156,14 @@ output "api-server-address" {
  value = "${google_compute_address.api-server.address}"
 }
 output "api-server-curl" {
- value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:6443/version"
+ value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.api-server-port}/version"
 }
 # mac curl has trouble with PEM format
 output "convert-to-pkcs12-for-mac-curl" {
  value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
 }
 output "curl-as-admin" {
- value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:6443/api/v1/nodes"
+ value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.api-server-port}/api/v1/nodes"
 }
 output "create-servers" {
   value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
@@ -523,13 +527,13 @@ resource "google_compute_http_health_check" "default" {
 resource "google_compute_forwarding_rule" "api-server-lb" {
   name       = "${var.env}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
-  port_range = "6443"
+  port_range = "${var.api-server-port}"
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
-    command = "cd config;./19-setup-kubectl-local.sh"
+    command = "cd config;./19-setup-kubectl-local.sh ${var.env} ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
-    command = "cd config;./20-setup-dns.sh"
+    command = "cd config;./20-setup-dns.sh ${var.cluster-dns}"
   }
 }
