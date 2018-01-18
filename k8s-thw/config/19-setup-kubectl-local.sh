@@ -1,11 +1,8 @@
 #!/bin/bash
 # configure local kubectl to interact with cluster just created and configured
 
-ENV=siler-k8s-thw
-
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe ${ENV} \
-  --region $(gcloud config get-value compute/region) \
-  --format 'value(address)')
+ENV=${1}
+KUBERNETES_PUBLIC_ADDRESS=${2}
 
 kubectl config set-cluster ${ENV} \
   --certificate-authority=../pki/ca.pem \
