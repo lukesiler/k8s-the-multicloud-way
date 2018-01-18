@@ -1,8 +1,10 @@
 #!/bin/bash
+# configure k8s worker CNI, kubelet and kube-proxy
 
-# get CIDR range for node
-POD_CIDR=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/attributes/pod-cidr)
+HOSTNAME=${1}
+CLUSTER_DNS=${2}
+POD_CIDR=${3}
+POD_CIDR_HOST=${4}
 
 # create bridge config
 cat > 10-bridge.conf <<EOF
@@ -16,7 +18,7 @@ cat > 10-bridge.conf <<EOF
     "ipam": {
         "type": "host-local",
         "ranges": [
-          [{"subnet": "${POD_CIDR}"}]
+          [{"subnet": "${POD_CIDR_HOST}"}]
         ],
         "routes": [{"dst": "0.0.0.0/0"}]
     }
@@ -51,14 +53,14 @@ ExecStart=/usr/local/bin/kubelet \\
   --anonymous-auth=false \\
   --authorization-mode=Webhook \\
   --client-ca-file=/var/lib/kubernetes/ca.pem \\
-  --cluster-dns=10.32.0.10 \\
+  --cluster-dns=${CLUSTER_DNS} \\
   --cluster-domain=cluster.local \\
   --container-runtime=remote \\
   --container-runtime-endpoint=unix:///var/run/cri-containerd.sock \\
   --image-pull-progress-deadline=2m \\
   --kubeconfig=/var/lib/kubelet/kubeconfig \\
   --network-plugin=cni \\
-  --pod-cidr=${POD_CIDR} \\
+  --pod-cidr=${POD_CIDR_HOST} \\
   --register-node=true \\
   --require-kubeconfig \\
   --runtime-request-timeout=15m \\
@@ -81,7 +83,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 
 [Service]
 ExecStart=/usr/local/bin/kube-proxy \\
-  --cluster-cidr=10.200.0.0/16 \\
+  --cluster-cidr=${POD_CIDR} \\
   --kubeconfig=/var/lib/kube-proxy/kubeconfig \\
   --proxy-mode=iptables \\
   --v=2

@@ -1,4 +1,5 @@
 #!/bin/bash
+# download binaries to worker
 
 wget -q --show-progress --https-only --timestamping \
   https://github.com/containernetworking/plugins/releases/download/v0.6.0/cni-plugins-amd64-v0.6.0.tgz \

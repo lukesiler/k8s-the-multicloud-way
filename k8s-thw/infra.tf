@@ -48,6 +48,9 @@ variable "cidr-pods" {
 variable "cidr-service-net" {
   default = "10.32.0.0/24"
 }
+variable "cluster-dns" {
+  default = "10.32.0.10"
+}
 
 variable "keypairs" {
   default = {
@@ -477,7 +480,7 @@ resource "google_compute_instance" "worker-nodes" {
       "chmod +x ~/*.sh",
       "./16-get-worker-bits.sh",
       "./17-install-worker-bits.sh",
-      "./18-config-worker.sh"
+      "./18-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${cidr-net-pod} ${lookup(var.cidr-pods, count.index)}"
     ]
 
     connection {
