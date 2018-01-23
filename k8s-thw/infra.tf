@@ -1,29 +1,25 @@
+variable "cloudRegion" {
+  default = "us-west1"
+}
+
+variable "cloudZone" {
+  default = "a"
+}
+
+variable "cloudProject" {
+  default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
+}
+
+variable "cloudCredential" {
+  default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
+}
+
 variable "envPrefix" {
   default = "siler-k8s-thw"
 }
 
-variable "region" {
-  default = "us-west1"
-}
-
-variable "zone" {
-  default = "a"
-}
-
-variable "zones" {
-  default = {
-    "0" = "a"
-    "1" = "b"
-    "2" = "c"
-  }
-}
-
-variable "gcp-project" {
-  default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
-}
-
-variable "gcp-credential" {
-  default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
+variable "envName" {
+  default = "Kubernetes The Hard Way"
 }
 
 variable "cidr-nodes" {
@@ -80,15 +76,15 @@ variable "ssh-key-path" {
 }
 
 provider "google" {
-  credentials = "${file("${var.gcp-credential}")}"
-  project     = "${var.gcp-project}"
-  region      = "${var.region}"
+  credentials = "${file("${var.cloudCredential}")}"
+  project     = "${var.cloudProject}"
+  region      = "${var.cloudRegion}"
 }
 
 resource "google_compute_network" "net" {
   name                    = "${var.envPrefix}"
   auto_create_subnetworks = "false"
-  description             = "Kubernetes the Hard Way - ${var.envPrefix}"
+  description             = "${var.envName} - ${var.envPrefix}"
 }
 
 output "net-gtwy" {
@@ -103,7 +99,7 @@ resource "google_compute_subnetwork" "subnet-nodes" {
   name          = "${var.envPrefix}-nodes"
   ip_cidr_range = "${var.cidr-nodes}"
   network       = "${google_compute_network.net.self_link}"
-  region        = "${var.region}"
+  region        = "${var.cloudRegion}"
 }
 
 output "subnet-nodes-self_link" {
@@ -155,7 +151,7 @@ output "allow-external-self_link" {
 
 resource "google_compute_address" "api-server" {
  name = "${var.envPrefix}"
- region = "${var.region}"
+ region = "${var.cloudRegion}"
 }
 output "api-server-self_link" {
  value = "${google_compute_address.api-server.self_link}"
@@ -208,7 +204,7 @@ resource "google_compute_instance" "master-nodes" {
   name         = "${var.envPrefix}${var.master-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
   // future - use conditional to spread across zones by index
-  zone         = "${var.region}-${var.zone}"
+  zone         = "${var.cloudRegion}-${var.cloudZone}"
 
   tags = ["${var.envPrefix}", "master"]
 
@@ -367,7 +363,7 @@ resource "google_compute_instance" "worker-nodes" {
 
   name         = "${var.envPrefix}${var.worker-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
-  zone         = "${var.region}-${var.zone}"
+  zone         = "${var.cloudRegion}-${var.cloudZone}"
 
   tags = ["${var.envPrefix}", "worker"]
 
