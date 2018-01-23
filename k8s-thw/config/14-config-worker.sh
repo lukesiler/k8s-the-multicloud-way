@@ -43,7 +43,7 @@ sudo mv ca.pem /var/lib/kubernetes/
 cat > kubelet.service <<EOF
 [Unit]
 Description=Kubernetes Kubelet
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Documentation=https://github.com/kubernetes/kubernetes
 After=cri-containerd.service
 Requires=cri-containerd.service
 
@@ -79,7 +79,7 @@ sudo mv kube-proxy.kubeconfig /var/lib/kube-proxy/kubeconfig
 cat > kube-proxy.service <<EOF
 [Unit]
 Description=Kubernetes Kube Proxy
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
 ExecStart=/usr/local/bin/kube-proxy \\

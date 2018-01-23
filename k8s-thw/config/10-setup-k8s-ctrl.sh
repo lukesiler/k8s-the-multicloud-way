@@ -19,7 +19,7 @@ sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem encryption-config.ya
 cat > kube-apiserver.service <<EOF
 [Unit]
 Description=Kubernetes API Server
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
 ExecStart=/usr/local/bin/kube-apiserver \\
@@ -65,7 +65,7 @@ EOF
 cat > kube-controller-manager.service <<EOF
 [Unit]
 Description=Kubernetes Controller Manager
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
 ExecStart=/usr/local/bin/kube-controller-manager \\
@@ -91,7 +91,7 @@ EOF
 cat > kube-scheduler.service <<EOF
 [Unit]
 Description=Kubernetes Scheduler
-Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+Documentation=https://github.com/kubernetes/kubernetes
 
 [Service]
 ExecStart=/usr/local/bin/kube-scheduler \\
