@@ -2,9 +2,9 @@
 # generate kubelet and kubeproxy config files for workers
 
 json=$(eval "cat ../in.json")
-envPrefix=$(echo ${json} | jq -r '.env.prefix')
-apiServerPort=$(echo ${json} | jq -r '.master.apiServerPort')
-workerNameQualifier=$(echo ${json} | jq -r '.worker.nameQualifier')
+envPrefix=$(echo ${json} | jq -r '.envPrefix')
+apiServerPort=$(echo ${json} | jq -r '.masterApiServerPort')
+workerNameQualifier=$(echo ${json} | jq -r '.workerNameQualifier')
 
 # access api server at LB IP so it is highly available
 KUBERNETES_PUBLIC_ADDRESS=${1}

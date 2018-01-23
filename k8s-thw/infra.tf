@@ -1,4 +1,4 @@
-variable "env" {
+variable "envPrefix" {
   default = "siler-k8s-thw"
 }
 
@@ -86,9 +86,9 @@ provider "google" {
 }
 
 resource "google_compute_network" "net" {
-  name                    = "${var.env}"
+  name                    = "${var.envPrefix}"
   auto_create_subnetworks = "false"
-  description             = "Kubernetes the Hard Way - ${var.env}"
+  description             = "Kubernetes the Hard Way - ${var.envPrefix}"
 }
 
 output "net-gtwy" {
@@ -100,7 +100,7 @@ output "net-self_link" {
 }
 
 resource "google_compute_subnetwork" "subnet-nodes" {
-  name          = "${var.env}-nodes"
+  name          = "${var.envPrefix}-nodes"
   ip_cidr_range = "${var.cidr-nodes}"
   network       = "${google_compute_network.net.self_link}"
   region        = "${var.region}"
@@ -111,7 +111,7 @@ output "subnet-nodes-self_link" {
 }
 
 resource "google_compute_firewall" "allow-internal" {
-  name    = "${var.env}-allow-internal"
+  name    = "${var.envPrefix}-allow-internal"
   network = "${google_compute_network.net.self_link}"
 
   allow {
@@ -134,7 +134,7 @@ output "allow-internal-self_link" {
 }
 
 resource "google_compute_firewall" "allow-external" {
-  name    = "${var.env}-allow-external"
+  name    = "${var.envPrefix}-allow-external"
   network = "${google_compute_network.net.self_link}"
 
   allow {
@@ -154,7 +154,7 @@ output "allow-external-self_link" {
 }
 
 resource "google_compute_address" "api-server" {
- name = "${var.env}"
+ name = "${var.envPrefix}"
  region = "${var.region}"
 }
 output "api-server-self_link" {
@@ -205,12 +205,12 @@ resource "null_resource" "pki-keypairs" {
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
-  name         = "${var.env}${var.master-name-qualifier}${count.index}"
+  name         = "${var.envPrefix}${var.master-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
   // future - use conditional to spread across zones by index
   zone         = "${var.region}-${var.zone}"
 
-  tags = ["${var.env}", "master"]
+  tags = ["${var.envPrefix}", "master"]
 
   boot_disk {
     initialize_params {
@@ -365,11 +365,11 @@ resource "null_resource" "master-nodes-api-rbac" {
 resource "google_compute_instance" "worker-nodes" {
   count = 3
 
-  name         = "${var.env}${var.worker-name-qualifier}${count.index}"
+  name         = "${var.envPrefix}${var.worker-name-qualifier}${count.index}"
   machine_type = "n1-standard-1"
   zone         = "${var.region}-${var.zone}"
 
-  tags = ["${var.env}", "worker"]
+  tags = ["${var.envPrefix}", "worker"]
 
   boot_disk {
     initialize_params {
@@ -407,8 +407,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.env}${var.worker-name-qualifier}${count.index}.pem"
-    destination = "${var.env}${var.worker-name-qualifier}${count.index}.pem"
+    source      = "pki/${var.envPrefix}${var.worker-name-qualifier}${count.index}.pem"
+    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}.pem"
 
     connection {
       type     = "ssh"
@@ -417,8 +417,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.env}${var.worker-name-qualifier}${count.index}-key.pem"
-    destination = "${var.env}${var.worker-name-qualifier}${count.index}-key.pem"
+    source      = "pki/${var.envPrefix}${var.worker-name-qualifier}${count.index}-key.pem"
+    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}-key.pem"
 
     connection {
       type     = "ssh"
@@ -427,8 +427,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/${var.env}${var.worker-name-qualifier}${count.index}.kubeconfig"
-    destination = "${var.env}${var.worker-name-qualifier}${count.index}.kubeconfig"
+    source      = "config/${var.envPrefix}${var.worker-name-qualifier}${count.index}.kubeconfig"
+    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}.kubeconfig"
 
     connection {
       type     = "ssh"
@@ -492,7 +492,7 @@ resource "google_compute_instance" "worker-nodes" {
       "chmod +x ~/*.sh",
       "./12-get-worker-bits.sh",
       "./13-install-worker-bits.sh",
-      "./14-config-worker.sh ${var.env}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
+      "./14-config-worker.sh ${var.envPrefix}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
     ]
 
     connection {
@@ -514,7 +514,7 @@ resource "google_compute_route" "worker-pod-route" {
 }
 
 resource "google_compute_target_pool" "master-node-pool" {
-  name = "${var.env}-masters-pool"
+  name = "${var.envPrefix}-masters-pool"
 
   instances = [
     "${google_compute_instance.master-nodes.*.self_link}"
@@ -533,13 +533,13 @@ resource "google_compute_http_health_check" "default" {
 */
 
 resource "google_compute_forwarding_rule" "api-server-lb" {
-  name       = "${var.env}-forwarding-rule"
+  name       = "${var.envPrefix}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
   port_range = "${var.api-server-port}"
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
-    command = "cd config;./15-setup-kubectl-local.sh ${var.env} ${google_compute_address.api-server.address}"
+    command = "cd config;./15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
     command = "cd config;./16-setup-dns.sh ${var.cluster-dns}"

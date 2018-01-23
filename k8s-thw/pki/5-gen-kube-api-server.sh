@@ -4,15 +4,15 @@
 KUBERNETES_PUBLIC_ADDRESS=${1}
 
 json=$(eval "cat ../in.json")
-envId=$(echo ${json} | jq -r '.env.id')
-envName=$(echo ${json} | jq -r '.env.name')
-pkiAlgo=$(echo ${json} | jq -r '.pki.algo')
-pkiSize=$(echo ${json} | jq -r '.pki.size')
-geoCity=$(echo ${json} | jq -r '.geo.city')
-geoState=$(echo ${json} | jq -r '.geo.state')
-geoCountry=$(echo ${json} | jq -r '.geo.country')
-masterPrimIpPrefix=$(echo ${json} | jq -r '.master.primaryIpPrefix')
-serviceNetPrefix=$(echo ${json} | jq -r '.master.serviceNetPrefix')
+envId=$(echo ${json} | jq -r '.envId')
+envName=$(echo ${json} | jq -r '.envName')
+pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
+pkiSize=$(echo ${json} | jq -r '.pkiSize')
+geoCity=$(echo ${json} | jq -r '.geoCity')
+geoState=$(echo ${json} | jq -r '.geoState')
+geoCountry=$(echo ${json} | jq -r '.geoCountry')
+masterPrimIpPrefix=$(echo ${json} | jq -r '.masterPrimaryIpPrefix')
+serviceNetPrefix=$(echo ${json} | jq -r '.masterServiceNetPrefix')
 
 cat > kubernetes-csr.json <<EOF
 {

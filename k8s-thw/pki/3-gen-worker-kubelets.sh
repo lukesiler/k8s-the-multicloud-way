@@ -2,15 +2,15 @@
 # generate kubelet keypair for each machine
 
 json=$(eval "cat ../in.json")
-envName=$(echo ${json} | jq -r '.env.name')
-envPrefix=$(echo ${json} | jq -r '.env.prefix')
-pkiAlgo=$(echo ${json} | jq -r '.pki.algo')
-pkiSize=$(echo ${json} | jq -r '.pki.size')
-geoCity=$(echo ${json} | jq -r '.geo.city')
-geoState=$(echo ${json} | jq -r '.geo.state')
-geoCountry=$(echo ${json} | jq -r '.geo.country')
-workerPrimIpPrefix=$(echo ${json} | jq -r '.worker.primaryIpPrefix')
-workerNameQualifier=$(echo ${json} | jq -r '.worker.nameQualifier')
+envName=$(echo ${json} | jq -r '.envName')
+envPrefix=$(echo ${json} | jq -r '.envPrefix')
+pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
+pkiSize=$(echo ${json} | jq -r '.pkiSize')
+geoCity=$(echo ${json} | jq -r '.geoCity')
+geoState=$(echo ${json} | jq -r '.geoState')
+geoCountry=$(echo ${json} | jq -r '.geoCountry')
+workerPrimIpPrefix=$(echo ${json} | jq -r '.workerPrimaryIpPrefix')
+workerNameQualifier=$(echo ${json} | jq -r '.workerNameQualifier')
 
 for i in 0 1 2; do
 hostname=${envPrefix}${workerNameQualifier}${i}

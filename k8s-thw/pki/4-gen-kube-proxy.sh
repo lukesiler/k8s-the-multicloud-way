@@ -2,12 +2,12 @@
 # generate kubeproxy keypair used on every machine
 
 json=$(eval "cat ../in.json")
-envName=$(echo ${json} | jq -r '.env.name')
-pkiAlgo=$(echo ${json} | jq -r '.pki.algo')
-pkiSize=$(echo ${json} | jq -r '.pki.size')
-geoCity=$(echo ${json} | jq -r '.geo.city')
-geoState=$(echo ${json} | jq -r '.geo.state')
-geoCountry=$(echo ${json} | jq -r '.geo.country')
+envName=$(echo ${json} | jq -r '.envName')
+pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
+pkiSize=$(echo ${json} | jq -r '.pkiSize')
+geoCity=$(echo ${json} | jq -r '.geoCity')
+geoState=$(echo ${json} | jq -r '.geoState')
+geoCountry=$(echo ${json} | jq -r '.geoCountry')
 
 cat > kube-proxy-csr.json <<EOF
 {

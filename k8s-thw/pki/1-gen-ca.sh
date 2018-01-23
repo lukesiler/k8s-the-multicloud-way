@@ -2,12 +2,12 @@
 # generate CA root
 
 json=$(eval "cat ../in.json")
-envId=$(echo ${json} | jq -r '.env.id')
-pkiAlgo=$(echo ${json} | jq -r '.pki.algo')
-pkiSize=$(echo ${json} | jq -r '.pki.size')
-geoCity=$(echo ${json} | jq -r '.geo.city')
-geoState=$(echo ${json} | jq -r '.geo.state')
-geoCountry=$(echo ${json} | jq -r '.geo.country')
+envId=$(echo ${json} | jq -r '.envId')
+pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
+pkiSize=$(echo ${json} | jq -r '.pkiSize')
+geoCity=$(echo ${json} | jq -r '.geoCity')
+geoState=$(echo ${json} | jq -r '.geoState')
+geoCountry=$(echo ${json} | jq -r '.geoCountry')
 
 cat > ca-csr.json <<EOF
 {
