@@ -17,47 +17,47 @@ variable "cloudCredential" {
 variable "envPrefix" {
   default = "siler-k8s-thw"
 }
-
 variable "envName" {
   default = "Kubernetes The Hard Way"
 }
 
-variable "cidr-nodes" {
+variable "physicalSubnetCidr" {
   default = "10.240.0.0/24"
 }
-variable "master-node-ip-prefix" {
+variable "masterPrimaryIpPrefix" {
   default = "10.240.0.1"
 }
-variable "master-name-qualifier" {
-  default = "-m-"
-}
-variable "worker-node-ip-prefix" {
+variable "workerPrimaryIpPrefix" {
   default = "10.240.0.2"
 }
-variable "worker-name-qualifier" {
+
+variable "masterNameQualifier" {
+  default = "-m-"
+}
+
+variable "masterApiServerPort" {
+  default = "6443"
+}
+
+variable "workerNameQualifier" {
   default = "-w-"
 }
 
-variable "cidr-pod-net" {
+variable "podSubnetCidr" {
   default = "10.200.0.0/16"
 }
-variable "cidr-pods" {
-  default = {
-    "0" = "10.200.0.0/24"
-    "1" = "10.200.1.0/24"
-    "2" = "10.200.2.0/24"
-  }
+variable "podSubnetPrefix" {
+  default = "10.200."
+}
+variable "podSubnetSuffix" {
+  default = ".0/24"
 }
 
-variable "cidr-service-net" {
+variable "serviceSubnetCidr" {
   default = "10.32.0.0/24"
 }
-variable "cluster-dns" {
+variable "serviceClusterKubeDns" {
   default = "10.32.0.10"
-}
-
-variable "api-server-port" {
-  default = "6443"
 }
 
 variable "keypairs" {
@@ -97,7 +97,7 @@ output "net-self_link" {
 
 resource "google_compute_subnetwork" "subnet-nodes" {
   name          = "${var.envPrefix}-nodes"
-  ip_cidr_range = "${var.cidr-nodes}"
+  ip_cidr_range = "${var.physicalSubnetCidr}"
   network       = "${google_compute_network.net.self_link}"
   region        = "${var.cloudRegion}"
 }
@@ -122,7 +122,7 @@ resource "google_compute_firewall" "allow-internal" {
     protocol = "udp"
   }
 
-  source_ranges = ["${var.cidr-nodes}", "${var.cidr-pod-net}"]
+  source_ranges = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
 }
 
 output "allow-internal-self_link" {
@@ -139,7 +139,7 @@ resource "google_compute_firewall" "allow-external" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "${var.api-server-port}"]
+    ports = ["22", "${var.masterApiServerPort}"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -160,14 +160,14 @@ output "api-server-address" {
  value = "${google_compute_address.api-server.address}"
 }
 output "api-server-curl" {
- value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.api-server-port}/version"
+ value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/version"
 }
 # mac curl has trouble with PEM format
 output "convert-to-pkcs12-for-mac-curl" {
  value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
 }
 output "curl-as-admin" {
- value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.api-server-port}/api/v1/nodes"
+ value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/api/v1/nodes"
 }
 output "create-servers" {
   value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
@@ -201,7 +201,7 @@ resource "null_resource" "pki-keypairs" {
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
-  name         = "${var.envPrefix}${var.master-name-qualifier}${count.index}"
+  name         = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   machine_type = "n1-standard-1"
   // future - use conditional to spread across zones by index
   zone         = "${var.cloudRegion}-${var.cloudZone}"
@@ -219,7 +219,7 @@ resource "google_compute_instance" "master-nodes" {
 
   network_interface {
     subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "${var.master-node-ip-prefix}${count.index}"
+    address = "${var.masterPrimaryIpPrefix}${count.index}"
     access_config {
       // Ephemeral Public IP
     }
@@ -313,8 +313,8 @@ resource "google_compute_instance" "master-nodes" {
     inline = [
       "chmod +x ~/*.sh",
       "~/8-get-master-bits.sh",
-      "~/9-setup-etcd.sh ${count.index} ${var.master-node-ip-prefix} ${var.master-name-qualifier}",
-      "~/10-setup-k8s-ctrl.sh ${count.index} ${var.master-node-ip-prefix} ${var.cidr-service-net} ${var.cidr-pod-net}"
+      "~/9-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
+      "~/10-setup-k8s-ctrl.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.serviceSubnetCidr} ${var.podSubnetCidr}"
     ]
 
     connection {
@@ -361,7 +361,7 @@ resource "null_resource" "master-nodes-api-rbac" {
 resource "google_compute_instance" "worker-nodes" {
   count = 3
 
-  name         = "${var.envPrefix}${var.worker-name-qualifier}${count.index}"
+  name         = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
   machine_type = "n1-standard-1"
   zone         = "${var.cloudRegion}-${var.cloudZone}"
 
@@ -378,7 +378,7 @@ resource "google_compute_instance" "worker-nodes" {
 
   network_interface {
     subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "${var.worker-node-ip-prefix}${count.index}"
+    address = "${var.workerPrimaryIpPrefix}${count.index}"
     access_config {
       // Ephemeral Public IP
     }
@@ -389,7 +389,7 @@ resource "google_compute_instance" "worker-nodes" {
   }
 
   metadata {
-    pod-cidr = "${lookup(var.cidr-pods, count.index)}"
+    pod-cidr = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
   }
 
   provisioner "file" {
@@ -403,8 +403,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.envPrefix}${var.worker-name-qualifier}${count.index}.pem"
-    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}.pem"
+    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
 
     connection {
       type     = "ssh"
@@ -413,8 +413,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "pki/${var.envPrefix}${var.worker-name-qualifier}${count.index}-key.pem"
-    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}-key.pem"
+    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
 
     connection {
       type     = "ssh"
@@ -423,8 +423,8 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/${var.envPrefix}${var.worker-name-qualifier}${count.index}.kubeconfig"
-    destination = "${var.envPrefix}${var.worker-name-qualifier}${count.index}.kubeconfig"
+    source      = "config/${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
 
     connection {
       type     = "ssh"
@@ -488,7 +488,7 @@ resource "google_compute_instance" "worker-nodes" {
       "chmod +x ~/*.sh",
       "./12-get-worker-bits.sh",
       "./13-install-worker-bits.sh",
-      "./14-config-worker.sh ${var.envPrefix}${var.worker-name-qualifier}${count.index} ${var.cluster-dns} ${var.cidr-pod-net} ${lookup(var.cidr-pods, count.index)}"
+      "./14-config-worker.sh ${var.envPrefix}${var.workerNameQualifier}${count.index} ${var.serviceClusterKubeDns} ${var.podSubnetCidr} ${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
     ]
 
     connection {
@@ -503,9 +503,9 @@ resource "google_compute_route" "worker-pod-route" {
   count = "${google_compute_instance.worker-nodes.count}"
 
   name        = "kubernetes-route-worker-${count.index}-pods"
-  dest_range  = "${lookup(var.cidr-pods, count.index)}"
+  dest_range  = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
   network     = "${google_compute_network.net.self_link}"
-  next_hop_ip = "${var.worker-node-ip-prefix}${count.index}"
+  next_hop_ip = "${var.workerPrimaryIpPrefix}${count.index}"
   priority = 1000
 }
 
@@ -531,13 +531,13 @@ resource "google_compute_http_health_check" "default" {
 resource "google_compute_forwarding_rule" "api-server-lb" {
   name       = "${var.envPrefix}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
-  port_range = "${var.api-server-port}"
+  port_range = "${var.masterApiServerPort}"
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
     command = "cd config;./15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
-    command = "cd config;./16-setup-dns.sh ${var.cluster-dns}"
+    command = "cd config;./16-setup-dns.sh ${var.serviceClusterKubeDns}"
   }
 }

@@ -12,7 +12,7 @@ geoCity=$(echo ${json} | jq -r '.geoCity')
 geoState=$(echo ${json} | jq -r '.geoState')
 geoCountry=$(echo ${json} | jq -r '.geoCountry')
 masterPrimIpPrefix=$(echo ${json} | jq -r '.masterPrimaryIpPrefix')
-serviceNetPrefix=$(echo ${json} | jq -r '.masterServiceNetPrefix')
+serviceClusterKubeApi=$(echo ${json} | jq -r '.serviceClusterKubeApi')
 
 cat > kubernetes-csr.json <<EOF
 {
@@ -37,6 +37,6 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=${serviceNetPrefix}1,${masterPrimIpPrefix}0,${masterPrimIpPrefix}1,${masterPrimIpPrefix}2,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,kubernetes.default \
+  -hostname=${serviceClusterKubeApi},${masterPrimIpPrefix}0,${masterPrimIpPrefix}1,${masterPrimIpPrefix}2,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,kubernetes.default \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
