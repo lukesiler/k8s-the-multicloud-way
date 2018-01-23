@@ -60,6 +60,19 @@ variable "serviceClusterKubeDns" {
   default = "10.32.0.10"
 }
 
+variable "verEtcd" {
+  default = "3.2.8"
+}
+variable "verK8s" {
+  default = "1.8.0"
+}
+variable "verContainerd" {
+  default = "1.0.0-alpha.0"
+}
+variable "verCni" {
+  default = "0.6.0"
+}
+
 variable "keypairs" {
   default = {
     "ca" = "ca"
@@ -312,7 +325,7 @@ resource "google_compute_instance" "master-nodes" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/*.sh",
-      "~/8-get-master-bits.sh",
+      "~/8-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
       "~/9-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
       "~/10-setup-k8s-ctrl.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.serviceSubnetCidr} ${var.podSubnetCidr}"
     ]
@@ -486,7 +499,7 @@ resource "google_compute_instance" "worker-nodes" {
     inline = [
       "sudo apt-get -y install socat",
       "chmod +x ~/*.sh",
-      "./12-get-worker-bits.sh",
+      "./12-get-worker-bits.sh ${var.verK8s} ${var.verContainerd} ${var.verCni}",
       "./13-install-worker-bits.sh",
       "./14-config-worker.sh ${var.envPrefix}${var.workerNameQualifier}${count.index} ${var.serviceClusterKubeDns} ${var.podSubnetCidr} ${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
     ]
