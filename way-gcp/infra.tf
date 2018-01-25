@@ -214,7 +214,7 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/6-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;../../config/7-gen-worker-config.sh ${google_compute_address.api-server.address}"
+    command = "cd config;../../config/07-gen-worker-config.sh ${google_compute_address.api-server.address}"
   }
 }
 
@@ -299,8 +299,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "../config/8-get-master-bits.sh"
-    destination = "8-get-master-bits.sh"
+    source      = "../config/08-get-master-bits.sh"
+    destination = "08-get-master-bits.sh"
 
     connection {
       type     = "ssh"
@@ -309,8 +309,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "../config/9-setup-etcd.sh"
-    destination = "9-setup-etcd.sh"
+    source      = "../config/09-setup-etcd.sh"
+    destination = "09-setup-etcd.sh"
 
     connection {
       type     = "ssh"
@@ -331,8 +331,8 @@ resource "google_compute_instance" "master-nodes" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/*.sh",
-      "~/8-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
-      "~/9-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
+      "~/08-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
+      "~/09-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
       "~/10-setup-k8s-ctrl.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.serviceSubnetCidr} ${var.podSubnetCidr}"
     ]
 

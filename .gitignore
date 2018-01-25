@@ -9,3 +9,4 @@ encryption-config.yaml
 *.pb.go
 .DS_Store
 *-csr.json
+kube-dns.yaml
