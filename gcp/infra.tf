@@ -1,17 +1,17 @@
-variable "cloudRegion" {
+variable "gcpRegion" {
   default = "us-west1"
 }
-
-variable "cloudZone" {
+variable "gcpZone" {
   default = "a"
 }
-
-variable "cloudProject" {
+variable "gcpProject" {
   default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
 }
-
-variable "cloudCredential" {
+variable "gcpCredential" {
   default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
+}
+variable "gcpMachineType" {
+  default = "n1-standard-1"
 }
 
 variable "envPrefix" {
@@ -89,9 +89,9 @@ variable "ssh-key-path" {
 }
 
 provider "google" {
-  credentials = "${file("${var.cloudCredential}")}"
-  project     = "${var.cloudProject}"
-  region      = "${var.cloudRegion}"
+  credentials = "${file("${var.gcpCredential}")}"
+  project     = "${var.gcpProject}"
+  region      = "${var.gcpRegion}"
 }
 
 resource "google_compute_network" "net" {
@@ -112,7 +112,7 @@ resource "google_compute_subnetwork" "subnet-nodes" {
   name          = "${var.envPrefix}-nodes"
   ip_cidr_range = "${var.physicalSubnetCidr}"
   network       = "${google_compute_network.net.self_link}"
-  region        = "${var.cloudRegion}"
+  region        = "${var.gcpRegion}"
 }
 
 output "subnet-nodes-self_link" {
@@ -164,7 +164,7 @@ output "allow-external-self_link" {
 
 resource "google_compute_address" "api-server" {
  name = "${var.envPrefix}"
- region = "${var.cloudRegion}"
+ region = "${var.gcpRegion}"
 }
 output "api-server-self_link" {
  value = "${google_compute_address.api-server.self_link}"
@@ -185,39 +185,45 @@ output "curl-as-admin" {
 output "create-servers" {
   value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
 }
+output "all-pods" {
+  value = "kubectl get pod -o wide --all-namespaces"
+}
 
 resource "null_resource" "pki-keypairs" {
   count = "1"
 
   provisioner "local-exec" {
-    command = "cd pki;./1-gen-ca.sh"
+    command = "mkdir -p pki config;rm -f pki/* config/*"
   }
   provisioner "local-exec" {
-    command = "cd pki;./2-gen-admin.sh"
+    command = "cd pki;../../pki/1-gen-ca.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;./3-gen-worker-kubelets.sh"
+    command = "cd pki;../../pki/2-gen-admin.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;./4-gen-kube-proxy.sh"
+    command = "cd pki;../../pki/3-gen-worker-kubelets.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;./5-gen-kube-api-server.sh ${google_compute_address.api-server.address}"
+    command = "cd pki;../../pki/4-gen-kube-proxy.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;./6-gen-encrypt-key.sh"
+    command = "cd pki;../../pki/5-gen-kube-api-server.sh ${google_compute_address.api-server.address}"
   }
   provisioner "local-exec" {
-    command = "cd config;./7-gen-worker-config.sh ${google_compute_address.api-server.address}"
+    command = "cd pki;../../pki/6-gen-encrypt-key.sh"
+  }
+  provisioner "local-exec" {
+    command = "cd config;../../config/7-gen-worker-config.sh ${google_compute_address.api-server.address}"
   }
 }
 
 resource "google_compute_instance" "master-nodes" {
   count = 3
   name         = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
-  machine_type = "n1-standard-1"
+  machine_type = "${var.gcpMachineType}"
   // future - use conditional to spread across zones by index
-  zone         = "${var.cloudRegion}-${var.cloudZone}"
+  zone         = "${var.gcpRegion}-${var.gcpZone}"
 
   tags = ["${var.envPrefix}", "master"]
 
@@ -293,7 +299,7 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/8-get-master-bits.sh"
+    source      = "../config/8-get-master-bits.sh"
     destination = "8-get-master-bits.sh"
 
     connection {
@@ -303,7 +309,7 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/9-setup-etcd.sh"
+    source      = "../config/9-setup-etcd.sh"
     destination = "9-setup-etcd.sh"
 
     connection {
@@ -313,7 +319,7 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/10-setup-k8s-ctrl.sh"
+    source      = "../config/10-setup-k8s-ctrl.sh"
     destination = "10-setup-k8s-ctrl.sh"
 
     connection {
@@ -343,7 +349,7 @@ resource "null_resource" "master-nodes-api-rbac" {
   count = "1"
 
   provisioner "file" {
-    source      = "config/11-config-rbac-kubelet.sh"
+    source      = "../config/11-config-rbac-kubelet.sh"
     destination = "11-config-rbac-kubelet.sh"
 
     connection {
@@ -375,8 +381,8 @@ resource "google_compute_instance" "worker-nodes" {
   count = 3
 
   name         = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
-  machine_type = "n1-standard-1"
-  zone         = "${var.cloudRegion}-${var.cloudZone}"
+  machine_type = "${var.gcpMachineType}"
+  zone         = "${var.gcpRegion}-${var.gcpZone}"
 
   tags = ["${var.envPrefix}", "worker"]
 
@@ -466,7 +472,7 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/12-get-worker-bits.sh"
+    source      = "../config/12-get-worker-bits.sh"
     destination = "12-get-worker-bits.sh"
 
     connection {
@@ -476,7 +482,7 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/13-install-worker-bits.sh"
+    source      = "../config/13-install-worker-bits.sh"
     destination = "13-install-worker-bits.sh"
 
     connection {
@@ -486,7 +492,7 @@ resource "google_compute_instance" "worker-nodes" {
     }
   }
   provisioner "file" {
-    source      = "config/14-config-worker.sh"
+    source      = "../config/14-config-worker.sh"
     destination = "14-config-worker.sh"
 
     connection {
@@ -548,9 +554,9 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
-    command = "cd config;./15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address}"
+    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
   }
   provisioner "local-exec" {
-    command = "cd config;./16-setup-dns.sh ${var.serviceClusterKubeDns}"
+    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns}"
   }
 }

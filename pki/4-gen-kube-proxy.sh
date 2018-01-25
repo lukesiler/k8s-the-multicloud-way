@@ -1,7 +1,7 @@
 #!/bin/bash
 # generate kubeproxy keypair used on every machine
 
-json=$(eval "cat ../in.json")
+json=$(eval "cat ../../in.json")
 envName=$(echo ${json} | jq -r '.envName')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
 pkiSize=$(echo ${json} | jq -r '.pkiSize')
@@ -31,6 +31,6 @@ EOF
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
-  -config=ca-config.json \
+  -config=../../pki/ca-config.json \
   -profile=kubernetes \
   kube-proxy-csr.json | cfssljson -bare kube-proxy

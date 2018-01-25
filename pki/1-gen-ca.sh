@@ -1,7 +1,7 @@
 #!/bin/bash
 # generate CA root
 
-json=$(eval "cat ../in.json")
+json=$(eval "cat ../../in.json")
 envId=$(echo ${json} | jq -r '.envId')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
 pkiSize=$(echo ${json} | jq -r '.pkiSize')

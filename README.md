@@ -1,11 +1,9 @@
-<p align="left"><b>Kubernetes the Terraform Way</b></p>
-
-# About
+# Kubernetes the Terraform Way
 
 An implementation of 
 <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">Kubernetes The Hard Way</a> that makes it easy to spin up K8S clusters quickly, peel the onion layers to understand exactly the steps involved, and change things up to try something different or new.
 
-# Tools
+## Tools
 
 <a href="https://www.terraform.io/">Terraform</a> for infrastructure control as code - network, compute, firewall, LB, etc.
 
@@ -17,7 +15,7 @@ An implementation of
 
 Initial version is implemented on Google Cloud Platform (GCP), but the plan is to follow that with an AWS version and eventually vSphere.
 
-# Try It
+## Try It
 
 Basic instructions to try this out yourself.
 
@@ -34,7 +32,9 @@ machine:dir user$ git clone
 
 machine:dir user$ vim in.json
 
-machine:dir user$ terraform apply -var-file in.json
+machine:dir user$ cd gcp
+
+machine:dir user$ terraform apply -var-file ../in.json
 
 machine:dir user$ kubectl create your-interesting-experiments
 

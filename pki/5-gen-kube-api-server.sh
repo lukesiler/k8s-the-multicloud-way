@@ -3,7 +3,7 @@
 
 KUBERNETES_PUBLIC_ADDRESS=${1}
 
-json=$(eval "cat ../in.json")
+json=$(eval "cat ../../in.json")
 envId=$(echo ${json} | jq -r '.envId')
 envName=$(echo ${json} | jq -r '.envName')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
@@ -36,7 +36,7 @@ EOF
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
-  -config=ca-config.json \
+  -config=../../pki/ca-config.json \
   -hostname=${serviceClusterKubeApi},${masterPrimIpPrefix}0,${masterPrimIpPrefix}1,${masterPrimIpPrefix}2,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,kubernetes.default \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes

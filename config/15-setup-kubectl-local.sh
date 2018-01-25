@@ -3,11 +3,12 @@
 
 ENV=${1}
 KUBERNETES_PUBLIC_ADDRESS=${2}
+KUBERNETES_API_PORT=${3}
 
 kubectl config set-cluster ${ENV} \
   --certificate-authority=../pki/ca.pem \
   --embed-certs=true \
-  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443
+  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:${KUBERNETES_API_PORT}
 
 kubectl config set-credentials admin \
   --client-certificate=../pki/admin.pem \

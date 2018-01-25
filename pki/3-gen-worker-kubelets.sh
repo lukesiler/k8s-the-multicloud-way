@@ -1,7 +1,7 @@
 #!/bin/bash
 # generate kubelet keypair for each machine
 
-json=$(eval "cat ../in.json")
+json=$(eval "cat ../../in.json")
 envName=$(echo ${json} | jq -r '.envName')
 envPrefix=$(echo ${json} | jq -r '.envPrefix')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')
@@ -37,7 +37,7 @@ EOF
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
-  -config=ca-config.json \
+  -config=../../pki/ca-config.json \
   -hostname=${hostname},${ip} \
   -profile=kubernetes \
   ${hostname}-csr.json | cfssljson -bare ${hostname}

@@ -4,7 +4,7 @@
 
 CLUSTER_DNS=${1}
 
-cat > ~/Downloads/kube-dns.yaml <<EOF
+cat > kube-dns.yaml <<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -199,4 +199,4 @@ spec:
       serviceAccountName: kube-dns
 EOF
 
-kubectl create -f ~/Downloads/kube-dns.yaml
+kubectl create -f kube-dns.yaml
