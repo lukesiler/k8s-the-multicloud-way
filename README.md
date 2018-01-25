@@ -32,7 +32,7 @@ machine:dir user$ git clone
 
 machine:dir user$ vim in.json
 
-machine:dir user$ cd gcp
+machine:dir user$ cd way-gcp
 
 machine:dir user$ terraform apply -var-file ../in.json
 
