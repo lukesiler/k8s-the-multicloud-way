@@ -1,17 +1,14 @@
-variable "gcpRegion" {
-  default = "us-west1"
+variable "awsRegion" {
+  default = "us-east-2"
 }
-variable "gcpZone" {
-  default = "a"
-}
-variable "gcpProject" {
-  default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
+variable "awsZone" {
+  default = "b"
 }
 variable "gcpCredential" {
   default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
 }
 variable "gcpMachineType" {
-  default = "n1-standard-1"
+  default = "m3.medium"
 }
 
 variable "envPrefix" {
@@ -88,10 +85,10 @@ variable "ssh-key-path" {
   default = "~/.ssh/google_compute_engine"
 }
 
-provider "google" {
-  credentials = "${file("${var.gcpCredential}")}"
-  project     = "${var.gcpProject}"
-  region      = "${var.gcpRegion}"
+provider "aws" {
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+  region     = "${var.region}"
 }
 
 resource "google_compute_network" "net" {
