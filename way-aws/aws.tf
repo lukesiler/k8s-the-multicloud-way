@@ -1,14 +1,32 @@
+provider "local" {
+}
+
 variable "awsRegion" {
   default = "us-east-2"
 }
 variable "awsZone" {
   default = "b"
 }
-variable "gcpCredential" {
-  default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
-}
-variable "gcpMachineType" {
+variable "awsMachineType" {
   default = "m3.medium"
+}
+variable "awsMachineImage" {
+  default = "ami-965e6bf3"
+}
+variable "awsVpcCidr" {
+  default = "10.0.0.0/16"
+}
+variable "awsAccessKeyIdPath" {
+  default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/access_key_id"
+}
+data "local_file" "awsAccessKeyId" {
+    filename = "${path.module}/${var.awsAccessKeyIdPath}"
+}
+variable "awsSecretAccessKeyPath" {
+  default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/secret_access_key"
+}
+data "local_file" "awsSecretAccessKey" {
+    filename = "${path.module}/${var.awsSecretAccessKeyPath}"
 }
 
 variable "envPrefix" {
@@ -86,79 +104,121 @@ variable "ssh-key-path" {
 }
 
 provider "aws" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
-  region     = "${var.region}"
+  access_key = "${trimspace(file("${var.awsAccessKeyIdPath}"))}"
+  secret_key = "${trimspace(file("${var.awsSecretAccessKeyPath}"))}"
+  region     = "${var.awsRegion}"
 }
 
-resource "google_compute_network" "net" {
-  name                    = "${var.envPrefix}"
-  auto_create_subnetworks = "false"
-  description             = "${var.envName} - ${var.envPrefix}"
+resource "aws_vpc" "net" {
+  cidr_block = "${var.awsVpcCidr}"
+  enable_dns_support = true
+  enable_dns_hostnames = true
+
+  tags {
+    Name = "${var.envPrefix}"
+  }
 }
 
-output "net-gtwy" {
-  value = "${google_compute_network.net.gateway_ipv4}"
+resource "aws_internet_gateway" "gw" {
+  vpc_id = "${aws_vpc.net.id}"
 }
 
-output "net-self_link" {
-  value = "${google_compute_network.net.self_link}"
-}
+resource "aws_subnet" "subnet-nodes" {
+  vpc_id     = "${aws_vpc.net.id}"
+  cidr_block = "${var.physicalSubnetCidr}"
+  availability_zone = "${var.awsRegion}${var.awsZone}"
+  map_public_ip_on_launch = true
 
-resource "google_compute_subnetwork" "subnet-nodes" {
-  name          = "${var.envPrefix}-nodes"
-  ip_cidr_range = "${var.physicalSubnetCidr}"
-  network       = "${google_compute_network.net.self_link}"
-  region        = "${var.gcpRegion}"
-}
-
-output "subnet-nodes-self_link" {
-  value = "${google_compute_subnetwork.subnet-nodes.self_link}"
-}
-
-resource "google_compute_firewall" "allow-internal" {
-  name    = "${var.envPrefix}-allow-internal"
-  network = "${google_compute_network.net.self_link}"
-
-  allow {
-    protocol = "icmp"
+  tags {
+    Name = "${var.envPrefix}"
   }
 
-  allow {
-    protocol = "tcp"
-  }
-
-  allow {
-    protocol = "udp"
-  }
-
-  source_ranges = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  depends_on = ["aws_internet_gateway.gw"]
 }
 
-output "allow-internal-self_link" {
-  value = "${google_compute_firewall.allow-internal.self_link}"
-}
+resource "aws_security_group" "allow-internal" {
+  name        = "allow-internal"
+  description = "Allow internal traffic"
+  vpc_id      = "${aws_vpc.net.id}"
 
-resource "google_compute_firewall" "allow-external" {
-  name    = "${var.envPrefix}-allow-external"
-  network = "${google_compute_network.net.self_link}"
-
-  allow {
-    protocol = "icmp"
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol    = "icmp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
 
-  allow {
-    protocol = "tcp"
-    ports = ["22", "${var.masterApiServerPort}"]
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol    = "tcp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
 
-  source_ranges = ["0.0.0.0/0"]
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol    = "udp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol    = "icmp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol    = "tcp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol    = "udp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
 }
 
-output "allow-external-self_link" {
-  value = "${google_compute_firewall.allow-external.self_link}"
+resource "aws_security_group" "allow-external" {
+  name        = "allow-external"
+  description = "Allow external traffic"
+  vpc_id      = "${aws_vpc.net.id}"
+
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = 0
+    to_port = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 22
+    to_port = 0
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
+/*
 resource "google_compute_address" "api-server" {
  name = "${var.envPrefix}"
  region = "${var.gcpRegion}"
@@ -535,15 +595,6 @@ resource "google_compute_target_pool" "master-node-pool" {
   // add health check in future
 }
 
-/*
-resource "google_compute_http_health_check" "default" {
-  name               = "default"
-  request_path       = "/"
-  check_interval_sec = 1
-  timeout_sec        = 1
-}
-*/
-
 resource "google_compute_forwarding_rule" "api-server-lb" {
   name       = "${var.envPrefix}-forwarding-rule"
   target     = "${google_compute_target_pool.master-node-pool.self_link}"
@@ -557,3 +608,4 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns}"
   }
 }
+*/
