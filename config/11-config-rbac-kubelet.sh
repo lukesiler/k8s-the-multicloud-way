@@ -1,6 +1,9 @@
 #!/bin/bash
 # configure RBAC policy that kubelet will use to access API server - run on only one of the masters after /healthz is successful
 
+# do NOT exit if any of the intermediate steps fail cause curl will definitely fail in polling
+#set -e
+
 # print messages with timestamp prefix
 msg() {
     echo >&2 -e `date "+%F %T"` $@
@@ -27,13 +30,14 @@ waitForUrl() {
     while [ ${attempt} -lt ${secondsToTry} ]; do
         statuscode=$(curl --silent --output /dev/null --write-out "%{http_code}" ${url})
         if test ${statuscode} -eq 200; then
-            msg "GET ok"
+            msg "GET ${statuscode}"
             return 0
         fi
+        msg "GET ${statuscode}"
         sleep 1
         attempt=`expr ${attempt} + 1`
     done
-    msg "ERROR: ${url} is not responding"
+    msg "ERROR: ${url} is not responding with a 200"
     return 1
 }
 

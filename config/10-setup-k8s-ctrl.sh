@@ -1,6 +1,9 @@
 #!/bin/bash
 # configure k8s API server, controller manager and scheduler on each k8s master
 
+# Exit if any of the intermediate steps fail
+set -e
+
 INDEX=${1}
 IP_PREFIX=${2}
 CLUSTER_CIDR=${3}

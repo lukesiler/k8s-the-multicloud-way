@@ -1,6 +1,9 @@
 #!/bin/bash
 # configure etcd on each k8s master
 
+# Exit if any of the intermediate steps fail
+set -e
+
 INDEX=${1}
 IP_PREFIX=${2}
 NAME_PREFIX=${3}

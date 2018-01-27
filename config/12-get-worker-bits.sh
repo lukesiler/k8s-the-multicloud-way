@@ -1,6 +1,9 @@
 #!/bin/bash
 # download binaries to worker
 
+# Exit if any of the intermediate steps fail
+set -e
+
 VER_K8S=${1}
 VER_CONTAINERD=${2}
 VER_CNI=${3}

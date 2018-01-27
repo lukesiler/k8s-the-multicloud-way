@@ -1,6 +1,9 @@
 #!/bin/bash
 # generate kubeproxy keypair used on every machine
 
+# Exit if any of the intermediate steps fail
+set -e
+
 json=$(eval "cat ../../in.json")
 envName=$(echo ${json} | jq -r '.envName')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')

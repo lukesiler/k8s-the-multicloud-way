@@ -1,6 +1,9 @@
 #!/bin/bash
 # install binaries to worker
 
+# Exit if any of the intermediate steps fail
+set -e
+
 sudo mkdir -p \
   /etc/cni/net.d \
   /opt/cni/bin \

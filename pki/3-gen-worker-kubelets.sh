@@ -1,6 +1,9 @@
 #!/bin/bash
 # generate kubelet keypair for each machine
 
+# Exit if any of the intermediate steps fail
+set -e
+
 json=$(eval "cat ../../in.json")
 envName=$(echo ${json} | jq -r '.envName')
 envPrefix=$(echo ${json} | jq -r '.envPrefix')

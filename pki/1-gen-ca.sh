@@ -1,6 +1,9 @@
 #!/bin/bash
 # generate CA root
 
+# Exit if any of the intermediate steps fail
+set -e
+
 json=$(eval "cat ../../in.json")
 envId=$(echo ${json} | jq -r '.envId')
 pkiAlgo=$(echo ${json} | jq -r '.pkiAlgo')

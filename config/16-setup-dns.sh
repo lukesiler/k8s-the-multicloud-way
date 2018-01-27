@@ -2,6 +2,9 @@
 # configure kube-dns to listen on 10.32.0.10 for pod internal DNS of cluster service IP's.
 # yaml also available at https://storage.googleapis.com/kubernetes-the-hard-way/kube-dns.yaml
 
+# Exit if any of the intermediate steps fail
+set -e
+
 CLUSTER_DNS=${1}
 
 cat > kube-dns.yaml <<EOF

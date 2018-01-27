@@ -1,6 +1,9 @@
 #!/bin/bash
 # download binaries to master
 
+# Exit if any of the intermediate steps fail
+set -e
+
 VER_ETCD=${1}
 VER_K8S=${2}
 

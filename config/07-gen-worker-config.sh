@@ -1,6 +1,9 @@
 #!/bin/bash
 # generate kubelet and kubeproxy config files for workers
 
+# Exit if any of the intermediate steps fail
+set -e
+
 json=$(eval "cat ../../in.json")
 envPrefix=$(echo ${json} | jq -r '.envPrefix')
 apiServerPort=$(echo ${json} | jq -r '.masterApiServerPort')

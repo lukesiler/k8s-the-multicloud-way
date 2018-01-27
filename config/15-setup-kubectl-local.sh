@@ -1,6 +1,9 @@
 #!/bin/bash
 # configure local kubectl to interact with cluster just created and configured
 
+# Exit if any of the intermediate steps fail
+set -e
+
 ENV=${1}
 KUBERNETES_PUBLIC_ADDRESS=${2}
 KUBERNETES_API_PORT=${3}

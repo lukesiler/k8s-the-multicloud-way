@@ -1,6 +1,9 @@
 #!/bin/bash
 # generate kube API server keypair
 
+# Exit if any of the intermediate steps fail
+set -e
+
 KUBERNETES_PUBLIC_ADDRESS=${1}
 
 json=$(eval "cat ../../in.json")

@@ -1,6 +1,9 @@
 #!/bin/bash
 # configure k8s worker CNI, kubelet and kube-proxy
 
+# Exit if any of the intermediate steps fail
+set -e
+
 HOSTNAME=${1}
 CLUSTER_DNS=${2}
 POD_CIDR=${3}

@@ -100,23 +100,11 @@ resource "google_compute_network" "net" {
   description             = "${var.envName} - ${var.envPrefix}"
 }
 
-output "net-gtwy" {
-  value = "${google_compute_network.net.gateway_ipv4}"
-}
-
-output "net-self_link" {
-  value = "${google_compute_network.net.self_link}"
-}
-
 resource "google_compute_subnetwork" "subnet-nodes" {
   name          = "${var.envPrefix}-nodes"
   ip_cidr_range = "${var.physicalSubnetCidr}"
   network       = "${google_compute_network.net.self_link}"
   region        = "${var.gcpRegion}"
-}
-
-output "subnet-nodes-self_link" {
-  value = "${google_compute_subnetwork.subnet-nodes.self_link}"
 }
 
 resource "google_compute_firewall" "allow-internal" {
@@ -138,10 +126,6 @@ resource "google_compute_firewall" "allow-internal" {
   source_ranges = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
 }
 
-output "allow-internal-self_link" {
-  value = "${google_compute_firewall.allow-internal.self_link}"
-}
-
 resource "google_compute_firewall" "allow-external" {
   name    = "${var.envPrefix}-allow-external"
   network = "${google_compute_network.net.self_link}"
@@ -158,16 +142,9 @@ resource "google_compute_firewall" "allow-external" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-output "allow-external-self_link" {
-  value = "${google_compute_firewall.allow-external.self_link}"
-}
-
 resource "google_compute_address" "api-server" {
  name = "${var.envPrefix}"
  region = "${var.gcpRegion}"
-}
-output "api-server-self_link" {
- value = "${google_compute_address.api-server.self_link}"
 }
 output "api-server-address" {
  value = "${google_compute_address.api-server.address}"
