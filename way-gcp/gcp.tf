@@ -22,13 +22,13 @@ variable "envName" {
 }
 
 variable "physicalSubnetCidr" {
-  default = "10.240.0.0/24"
+  default = "192.168.1.0/24"
 }
 variable "masterPrimaryIpPrefix" {
-  default = "10.240.0.1"
+  default = "192.168.1.1"
 }
 variable "workerPrimaryIpPrefix" {
-  default = "10.240.0.2"
+  default = "192.168.1.2"
 }
 
 variable "masterNameQualifier" {

@@ -11,7 +11,7 @@ variable "awsMachineImage" {
   default = "ami-965e6bf3"
 }
 variable "awsVpcCidr" {
-  default = "10.0.0.0/8"
+  default = "192.168.0.0/16"
 }
 variable "awsAccessKeyIdPath" {
   default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/access_key_id"
@@ -28,13 +28,13 @@ variable "envName" {
 }
 
 variable "physicalSubnetCidr" {
-  default = "10.240.0.0/24"
+  default = "192.168.1.0/24"
 }
 variable "masterPrimaryIpPrefix" {
-  default = "10.240.0.1"
+  default = "192.168.1.1"
 }
 variable "workerPrimaryIpPrefix" {
-  default = "10.240.0.2"
+  default = "192.168.1.2"
 }
 
 variable "masterNameQualifier" {
@@ -203,7 +203,7 @@ resource "aws_security_group" "allow-external" {
 
   egress {
     from_port = 22
-    to_port = 0
+    to_port = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
