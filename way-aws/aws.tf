@@ -209,27 +209,28 @@ resource "aws_security_group" "allow-external" {
   }
 }
 
-/*
-resource "google_compute_address" "api-server" {
- name = "${var.envPrefix}"
- region = "${var.gcpRegion}"
+resource "aws_eip" "api-server" {
+  vpc      = true
+
+  tags {
+    Name = "${var.envPrefix}"
+  }
 }
-output "api-server-self_link" {
- value = "${google_compute_address.api-server.self_link}"
-}
+
 output "api-server-address" {
- value = "${google_compute_address.api-server.address}"
+ value = "${aws_eip.api-server.public_ip}"
 }
 output "api-server-curl" {
- value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/version"
+ value = "curl --cacert pki/ca.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/version"
 }
 # mac curl has trouble with PEM format
 output "convert-to-pkcs12-for-mac-curl" {
  value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
 }
 output "curl-as-admin" {
- value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/api/v1/nodes"
+ value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/api/v1/nodes"
 }
+
 output "create-servers" {
   value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
 }
@@ -256,16 +257,16 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/4-gen-kube-proxy.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;../../pki/5-gen-kube-api-server.sh ${google_compute_address.api-server.address}"
+    command = "cd pki;../../pki/5-gen-kube-api-server.sh ${aws_eip.api-server.public_ip}"
   }
   provisioner "local-exec" {
     command = "cd pki;../../pki/6-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;../../config/7-gen-worker-config.sh ${google_compute_address.api-server.address}"
+    command = "cd config;../../config/07-gen-worker-config.sh ${aws_eip.api-server.public_ip}"
   }
 }
-
+/*
 resource "google_compute_instance" "master-nodes" {
   count = 3
   name         = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
@@ -347,8 +348,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "../config/8-get-master-bits.sh"
-    destination = "8-get-master-bits.sh"
+    source      = "../config/08-get-master-bits.sh"
+    destination = "08-get-master-bits.sh"
 
     connection {
       type     = "ssh"
@@ -357,8 +358,8 @@ resource "google_compute_instance" "master-nodes" {
     }
   }
   provisioner "file" {
-    source      = "../config/9-setup-etcd.sh"
-    destination = "9-setup-etcd.sh"
+    source      = "../config/09-setup-etcd.sh"
+    destination = "09-setup-etcd.sh"
 
     connection {
       type     = "ssh"
@@ -379,8 +380,8 @@ resource "google_compute_instance" "master-nodes" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/*.sh",
-      "~/8-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
-      "~/9-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
+      "~/08-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
+      "~/09-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
       "~/10-setup-k8s-ctrl.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.serviceSubnetCidr} ${var.podSubnetCidr}"
     ]
 
