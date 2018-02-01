@@ -165,6 +165,16 @@ output "create-servers" {
 output "all-pods" {
   value = "kubectl get pod -o wide --all-namespaces"
 }
+output "busybox-run" {
+  value = "kubectl run busybox --image=busybox --command -- sleep 3600"
+}
+output "busybox-nslookup" {
+  value = "POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath=\"{.items[0].metadata.name}\");kubectl exec -ti $POD_NAME -- nslookup kubernetes"
+}
+output "rhel-atomic-run" {
+  # broken - need to fix
+  value = "kubectl run rhel-atomic --image=registry.access.redhat.com/rhel7-atomic --command -- sleep 3600"
+}
 
 resource "null_resource" "pki-keypairs" {
   count = "1"

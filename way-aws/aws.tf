@@ -1,6 +1,3 @@
-provider "local" {
-}
-
 variable "awsRegion" {
   default = "us-east-2"
 }
@@ -14,19 +11,13 @@ variable "awsMachineImage" {
   default = "ami-965e6bf3"
 }
 variable "awsVpcCidr" {
-  default = "10.0.0.0/16"
+  default = "10.0.0.0/8"
 }
 variable "awsAccessKeyIdPath" {
   default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/access_key_id"
 }
-data "local_file" "awsAccessKeyId" {
-    filename = "${path.module}/${var.awsAccessKeyIdPath}"
-}
 variable "awsSecretAccessKeyPath" {
   default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/secret_access_key"
-}
-data "local_file" "awsSecretAccessKey" {
-    filename = "${path.module}/${var.awsSecretAccessKeyPath}"
 }
 
 variable "envPrefix" {
