@@ -84,7 +84,7 @@ variable "ssh-user" {
   default = "siler"
 }
 
-variable "ssh-key-path" {
+variable "gcpSshKeyPath" {
   default = "~/.ssh/google_compute_engine"
 }
 
@@ -242,7 +242,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -252,7 +252,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -262,7 +262,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -272,7 +272,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -282,7 +282,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -292,7 +292,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -302,7 +302,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -312,7 +312,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "remote-exec" {
@@ -326,7 +326,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
 }
@@ -344,7 +344,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
 
@@ -359,7 +359,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
 }
@@ -405,7 +405,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -415,7 +415,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -425,7 +425,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -435,7 +435,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -445,7 +445,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -455,7 +455,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -465,7 +465,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -475,7 +475,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -485,7 +485,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
   provisioner "remote-exec" {
@@ -500,7 +500,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
 }

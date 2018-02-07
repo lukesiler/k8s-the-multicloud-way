@@ -5,7 +5,7 @@ variable "awsZone" {
   default = "b"
 }
 variable "awsMachineType" {
-  default = "m3.medium"
+  default = "t2.medium"
 }
 variable "awsMachineImage" {
   default = "ami-965e6bf3"
@@ -18,6 +18,10 @@ variable "awsAccessKeyIdPath" {
 }
 variable "awsSecretAccessKeyPath" {
   default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/secret_access_key"
+}
+variable "awsSshKeyName" {
+}
+variable "awsSshKeyPath" {
 }
 
 variable "envPrefix" {
@@ -90,10 +94,6 @@ variable "ssh-user" {
   default = "siler"
 }
 
-variable "ssh-key-path" {
-  default = "~/.ssh/google_compute_engine"
-}
-
 provider "aws" {
   access_key = "${trimspace(file("${var.awsAccessKeyIdPath}"))}"
   secret_key = "${trimspace(file("${var.awsSecretAccessKeyPath}"))}"
@@ -127,83 +127,35 @@ resource "aws_subnet" "subnet-nodes" {
   depends_on = ["aws_internet_gateway.gw"]
 }
 
-resource "aws_security_group" "allow-internal" {
-  name        = "allow-internal"
-  description = "Allow internal traffic"
+resource "aws_security_group" "allow-enough" {
+  name        = "allow-enough"
+  description = "Allow enough traffic"
   vpc_id      = "${aws_vpc.net.id}"
 
   ingress {
     from_port = 0
-    to_port = 0
-    protocol    = "icmp"
-    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
-  }
-
-  ingress {
-    from_port = 0
-    to_port = 0
+    to_port = 65535
     protocol    = "tcp"
     cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
 
   ingress {
     from_port = 0
-    to_port = 0
+    to_port = 65535
     protocol    = "udp"
     cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
 
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol    = "icmp"
-    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol    = "tcp"
-    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol    = "udp"
-    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
-  }
-}
-
-resource "aws_security_group" "allow-external" {
-  name        = "allow-external"
-  description = "Allow external traffic"
-  vpc_id      = "${aws_vpc.net.id}"
-
   ingress {
-    from_port = 0
-    to_port = 0
-    protocol    = "icmp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port = 0
-    to_port = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol    = "icmp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
     from_port = 22
     to_port = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port = "${var.masterApiServerPort}"
+    to_port = "${var.masterApiServerPort}"
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -266,35 +218,27 @@ resource "null_resource" "pki-keypairs" {
     command = "cd config;../../config/07-gen-worker-config.sh ${aws_eip.api-server.public_ip}"
   }
 }
-/*
-resource "google_compute_instance" "master-nodes" {
-  count = 3
-  name         = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
-  machine_type = "${var.gcpMachineType}"
-  // future - use conditional to spread across zones by index
-  zone         = "${var.gcpRegion}-${var.gcpZone}"
 
-  tags = ["${var.envPrefix}", "master"]
+resource "aws_instance" "master-nodes" {
+  count = "3"
+  ami           = "${var.awsMachineImage}"
+  instance_type = "${var.awsMachineType}"
+  subnet_id     = "${aws_subnet.subnet-nodes.id}"
+  associate_public_ip_address = true
+  source_dest_check = false
+  private_ip = "${var.masterPrimaryIpPrefix}${count.index}"
+  key_name = "${var.awsSshKeyName}"
 
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1604-lts"
-      size = 200
-    }
+  vpc_security_group_ids = [
+    "${aws_security_group.allow-enough.id}"
+  ]
+
+  tags {
+    Name = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   }
 
-  can_ip_forward = true
-
-  network_interface {
-    subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "${var.masterPrimaryIpPrefix}${count.index}"
-    access_config {
-      // Ephemeral Public IP
-    }
-  }
-
-  service_account {
-    scopes = ["compute-rw", "storage-ro", "service-management", "service-control", "logging-write", "monitoring"]
+  volume_tags {
+    Name = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   }
 
   provisioner "file" {
@@ -304,7 +248,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -314,7 +258,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -324,7 +268,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -334,7 +278,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -344,7 +288,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -354,7 +298,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -364,7 +308,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "file" {
@@ -374,7 +318,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
   provisioner "remote-exec" {
@@ -388,7 +332,7 @@ resource "google_compute_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
 }
@@ -403,10 +347,10 @@ resource "null_resource" "master-nodes-api-rbac" {
 
     connection {
       // use index of the last master node for best chance that others are up and configured
-      host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
+      host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
 
@@ -418,14 +362,15 @@ resource "null_resource" "master-nodes-api-rbac" {
 
     connection {
       // use index of the last master node for best chance that others are up and configured
-      host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
+      host     = "${google_compute_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
 }
 
+/*
 resource "google_compute_instance" "worker-nodes" {
   count = 3
 
@@ -467,7 +412,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -477,7 +422,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -487,7 +432,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -497,7 +442,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -507,7 +452,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -517,7 +462,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -527,7 +472,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -537,7 +482,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "file" {
@@ -547,7 +492,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
   provisioner "remote-exec" {
@@ -562,7 +507,7 @@ resource "google_compute_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.ssh-user}"
-      private_key = "${file("${var.ssh-key-path}")}"
+      private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
 }
