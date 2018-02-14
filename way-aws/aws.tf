@@ -90,8 +90,8 @@ variable "keypairs" {
   }
 }
 
-variable "ssh-user" {
-  default = "siler"
+variable "awsSshUser" {
+  default = "ubuntu"
 }
 
 provider "aws" {
@@ -110,8 +110,21 @@ resource "aws_vpc" "net" {
   }
 }
 
-resource "aws_internet_gateway" "gw" {
+resource "aws_internet_gateway" "igw" {
   vpc_id = "${aws_vpc.net.id}"
+}
+
+resource "aws_default_route_table" "igw-route" {
+  default_route_table_id = "${aws_vpc.net.default_route_table_id}"
+
+  route {
+    gateway_id = "${aws_internet_gateway.igw.id}"
+    cidr_block = "0.0.0.0/0"
+  }
+
+  tags {
+    Name = "${var.envPrefix}"
+  }
 }
 
 resource "aws_subnet" "subnet-nodes" {
@@ -123,8 +136,6 @@ resource "aws_subnet" "subnet-nodes" {
   tags {
     Name = "${var.envPrefix}"
   }
-
-  depends_on = ["aws_internet_gateway.gw"]
 }
 
 resource "aws_security_group" "allow-enough" {
@@ -132,20 +143,35 @@ resource "aws_security_group" "allow-enough" {
   description = "Allow enough traffic"
   vpc_id      = "${aws_vpc.net.id}"
 
+  # allow internal TCP on physical and pod subnets
   ingress {
     from_port = 0
     to_port = 65535
     protocol    = "tcp"
     cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
+  egress {
+    from_port = 0
+    to_port = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
 
+  # allow internal UDP on physical and pod subnets
   ingress {
     from_port = 0
     to_port = 65535
     protocol    = "udp"
     cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
   }
+  egress {
+    from_port = 0
+    to_port = 65535
+    protocol    = "udp"
+    cidr_blocks = ["${var.physicalSubnetCidr}", "${var.podSubnetCidr}"]
+  }
 
+  # allow inbound access to SSH
   ingress {
     from_port = 22
     to_port = 22
@@ -153,9 +179,18 @@ resource "aws_security_group" "allow-enough" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # allow inbound access to API server
   ingress {
     from_port = "${var.masterApiServerPort}"
     to_port = "${var.masterApiServerPort}"
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # allow download of binaries
+  egress {
+    from_port = 443
+    to_port = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -193,6 +228,10 @@ output "all-pods" {
 resource "null_resource" "pki-keypairs" {
   count = "1"
 
+  provisioner "local-exec" {
+    # make sure perms on ssh private key match AWS' requirements - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectingMindTerm
+    command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem"
+  }
   provisioner "local-exec" {
     command = "mkdir -p pki config;rm -f pki/* config/*"
   }
@@ -241,13 +280,15 @@ resource "aws_instance" "master-nodes" {
     Name = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   }
 
+  depends_on = ["aws_internet_gateway.igw"]
+
   provisioner "file" {
     source      = "pki/${var.keypairs["ca"]}.pem"
     destination = "${var.keypairs["ca"]}.pem"
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -257,7 +298,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -267,7 +308,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -277,7 +318,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -287,7 +328,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -297,7 +338,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -307,7 +348,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -317,7 +358,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -331,7 +372,7 @@ resource "aws_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -349,7 +390,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       // use index of the last master node for best chance that others are up and configured
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -362,9 +403,9 @@ resource "null_resource" "master-nodes-api-rbac" {
 
     connection {
       // use index of the last master node for best chance that others are up and configured
-      host     = "${google_compute_instance.master-nodes.2.public_ip}"
+      host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
@@ -411,7 +452,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -421,7 +462,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -431,7 +472,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -441,7 +482,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -451,7 +492,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -461,7 +502,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -471,7 +512,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -481,7 +522,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -491,7 +532,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
@@ -506,7 +547,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.awsSshUser}"
       private_key = "${file("${var.awsSshKeyPath}")}"
     }
   }
