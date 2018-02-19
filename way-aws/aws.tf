@@ -411,6 +411,52 @@ resource "null_resource" "master-nodes-api-rbac" {
   }
 }
 
+resource "aws_lb" "api-server" {
+  # NLB sits in provisioning for minutes - very slow
+  name            = "${var.envPrefix}"
+  internal        = false
+  load_balancer_type = "network"
+  enable_deletion_protection = false
+  ip_address_type = "ipv4"
+
+  subnet_mapping {
+    subnet_id = "${aws_subnet.subnet-nodes.id}"
+    allocation_id = "${aws_eip.api-server.id}"
+  }
+}
+
+resource "aws_lb_target_group" "api-server" {
+  name    = "${var.envPrefix}"
+  port     = 6443
+  protocol = "TCP"
+  vpc_id   = "${aws_vpc.net.id}"
+  target_type = "instance"
+
+  health_check {
+    # reporting unhealthy - due to TLS handshake?
+    # 10 or 30 are the supported options
+    interval = 10
+  }
+}
+
+resource "aws_lb_target_group_attachment" "master-node-0" {
+  target_group_arn = "${aws_lb_target_group.api-server.arn}"
+  # need a hack to get all three - https://github.com/hashicorp/terraform/pull/9986
+  target_id        = "${aws_instance.master-nodes.0.id}"
+  port             = 6443
+}
+
+resource "aws_lb_listener" "api-server" {
+  load_balancer_arn = "${aws_lb.api-server.arn}"
+  port              = "6443"
+  protocol          = "TCP"
+
+  default_action {
+    target_group_arn = "${aws_lb_target_group.api-server.arn}"
+    type             = "forward"
+  }
+}
+
 /*
 resource "google_compute_instance" "worker-nodes" {
   count = 3
