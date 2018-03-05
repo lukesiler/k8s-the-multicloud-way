@@ -2,10 +2,18 @@
 # configure kube-dns to listen on 10.32.0.10 for pod internal DNS of cluster service IP's.
 # yaml also available at https://storage.googleapis.com/kubernetes-the-hard-way/kube-dns.yaml
 
-# Exit if any of the intermediate steps fail
-set -e
+# do NOT exit if any of the intermediate steps fail cause curl will definitely fail in polling NLB endpoint while waiting for it to come up
+#set -e
+
+# import common functions
+source ../../config/common.sh
 
 CLUSTER_DNS=${1}
+KUBERNETES_PUBLIC_ADDRESS=${2}
+KUBERNETES_API_PORT=${3}
+
+# very API server is ready to handle config changes from kubectl - this is particularly for NLB delay
+waitForUrlOrExit https://${KUBERNETES_PUBLIC_ADDRESS}:${KUBERNETES_API_PORT}/healthz 60
 
 cat > kube-dns.yaml <<EOF
 apiVersion: v1

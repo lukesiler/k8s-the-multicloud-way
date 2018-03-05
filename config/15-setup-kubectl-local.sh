@@ -8,17 +8,21 @@ ENV=${1}
 KUBERNETES_PUBLIC_ADDRESS=${2}
 KUBERNETES_API_PORT=${3}
 
-kubectl config set-cluster ${ENV} \
+# get the way as disambiguator of kubectl context for cluster so the ways can live side-by-side
+WAY=$(echo ${PWD} | cut -d "/" -f 7)
+CLUSTER=${ENV}-${WAY}
+
+kubectl config set-cluster ${CLUSTER} \
   --certificate-authority=../pki/ca.pem \
   --embed-certs=true \
   --server=https://${KUBERNETES_PUBLIC_ADDRESS}:${KUBERNETES_API_PORT}
 
-kubectl config set-credentials admin \
+kubectl config set-credentials ${CLUSTER}-admin \
   --client-certificate=../pki/admin.pem \
   --client-key=../pki/admin-key.pem
 
-kubectl config set-context ${ENV} \
-  --cluster=${ENV} \
-  --user=admin
+kubectl config set-context ${CLUSTER} \
+  --cluster=${CLUSTER} \
+  --user=${CLUSTER}-admin
 
-kubectl config use-context ${ENV}
+kubectl config use-context ${CLUSTER}

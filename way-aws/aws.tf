@@ -411,6 +411,137 @@ resource "null_resource" "master-nodes-api-rbac" {
   }
 }
 
+resource "aws_instance" "worker-nodes" {
+  count = "3"
+  ami           = "${var.awsMachineImage}"
+  instance_type = "${var.awsMachineType}"
+  subnet_id     = "${aws_subnet.subnet-nodes.id}"
+  associate_public_ip_address = true
+  source_dest_check = false
+  private_ip = "${var.workerPrimaryIpPrefix}${count.index}"
+  key_name = "${var.awsSshKeyName}"
+
+  vpc_security_group_ids = [
+    "${aws_security_group.allow-enough.id}"
+  ]
+
+  tags {
+    Name = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
+  }
+
+  volume_tags {
+    Name = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
+  }
+
+  depends_on = ["aws_internet_gateway.igw"]
+
+  provisioner "file" {
+    source      = "pki/${var.keypairs["ca"]}.pem"
+    destination = "${var.keypairs["ca"]}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
+    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/kube-proxy.kubeconfig"
+    destination = "kube-proxy.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "config/kube-proxy.kubeconfig"
+    destination = "kube-proxy.kubeconfig"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "../config/12-get-worker-bits.sh"
+    destination = "12-get-worker-bits.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "../config/13-install-worker-bits.sh"
+    destination = "13-install-worker-bits.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "file" {
+    source      = "../config/14-config-worker.sh"
+    destination = "14-config-worker.sh"
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get -y install socat",
+      "chmod +x ~/*.sh",
+      "./12-get-worker-bits.sh ${var.verK8s} ${var.verContainerd} ${var.verCni}",
+      "./13-install-worker-bits.sh",
+      "./14-config-worker.sh ${var.envPrefix}${var.workerNameQualifier}${count.index} ${var.serviceClusterKubeDns} ${var.podSubnetCidr} ${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+}
+
 resource "aws_lb" "api-server" {
   # NLB sits in provisioning for minutes - very slow
   name            = "${var.envPrefix}"
@@ -423,11 +554,13 @@ resource "aws_lb" "api-server" {
     subnet_id = "${aws_subnet.subnet-nodes.id}"
     allocation_id = "${aws_eip.api-server.id}"
   }
+
+  depends_on = ["aws_eip.api-server"]
 }
 
 resource "aws_lb_target_group" "api-server" {
   name    = "${var.envPrefix}"
-  port     = 6443
+  port     = "${var.masterApiServerPort}"
   protocol = "TCP"
   vpc_id   = "${aws_vpc.net.id}"
   target_type = "instance"
@@ -443,162 +576,28 @@ resource "aws_lb_target_group_attachment" "master-node-0" {
   target_group_arn = "${aws_lb_target_group.api-server.arn}"
   # need a hack to get all three - https://github.com/hashicorp/terraform/pull/9986
   target_id        = "${aws_instance.master-nodes.0.id}"
-  port             = 6443
+  port             = "${var.masterApiServerPort}"
 }
 
 resource "aws_lb_listener" "api-server" {
   load_balancer_arn = "${aws_lb.api-server.arn}"
-  port              = "6443"
+  port              = "${var.masterApiServerPort}"
   protocol          = "TCP"
 
   default_action {
     target_group_arn = "${aws_lb_target_group.api-server.arn}"
     type             = "forward"
   }
+
+  provisioner "local-exec" {
+    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
+  }
+  provisioner "local-exec" {
+    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
+  }
 }
 
 /*
-resource "google_compute_instance" "worker-nodes" {
-  count = 3
-
-  name         = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
-  machine_type = "${var.gcpMachineType}"
-  zone         = "${var.gcpRegion}-${var.gcpZone}"
-
-  tags = ["${var.envPrefix}", "worker"]
-
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1604-lts"
-      size = 200
-    }
-  }
-
-  can_ip_forward = true
-
-  network_interface {
-    subnetwork = "${google_compute_subnetwork.subnet-nodes.self_link}"
-    address = "${var.workerPrimaryIpPrefix}${count.index}"
-    access_config {
-      // Ephemeral Public IP
-    }
-  }
-
-  service_account {
-    scopes = ["compute-rw", "storage-ro", "service-management", "service-control", "logging-write", "monitoring"]
-  }
-
-  metadata {
-    pod-cidr = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
-  }
-
-  provisioner "file" {
-    source      = "pki/${var.keypairs["ca"]}.pem"
-    destination = "${var.keypairs["ca"]}.pem"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
-    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.pem"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "pki/${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
-    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}-key.pem"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "config/${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
-    destination = "${var.envPrefix}${var.workerNameQualifier}${count.index}.kubeconfig"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "config/kube-proxy.kubeconfig"
-    destination = "kube-proxy.kubeconfig"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "config/kube-proxy.kubeconfig"
-    destination = "kube-proxy.kubeconfig"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "../config/12-get-worker-bits.sh"
-    destination = "12-get-worker-bits.sh"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "../config/13-install-worker-bits.sh"
-    destination = "13-install-worker-bits.sh"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "file" {
-    source      = "../config/14-config-worker.sh"
-    destination = "14-config-worker.sh"
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get -y install socat",
-      "chmod +x ~/*.sh",
-      "./12-get-worker-bits.sh ${var.verK8s} ${var.verContainerd} ${var.verCni}",
-      "./13-install-worker-bits.sh",
-      "./14-config-worker.sh ${var.envPrefix}${var.workerNameQualifier}${count.index} ${var.serviceClusterKubeDns} ${var.podSubnetCidr} ${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
-    ]
-
-    connection {
-      type     = "ssh"
-      user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}")}"
-    }
-  }
-}
-
 resource "google_compute_route" "worker-pod-route" {
   count = "${google_compute_instance.worker-nodes.count}"
 
@@ -607,29 +606,5 @@ resource "google_compute_route" "worker-pod-route" {
   network     = "${google_compute_network.net.self_link}"
   next_hop_ip = "${var.workerPrimaryIpPrefix}${count.index}"
   priority = 1000
-}
-
-resource "google_compute_target_pool" "master-node-pool" {
-  name = "${var.envPrefix}-masters-pool"
-
-  instances = [
-    "${google_compute_instance.master-nodes.*.self_link}"
-  ]
-
-  // add health check in future
-}
-
-resource "google_compute_forwarding_rule" "api-server-lb" {
-  name       = "${var.envPrefix}-forwarding-rule"
-  target     = "${google_compute_target_pool.master-node-pool.self_link}"
-  port_range = "${var.masterApiServerPort}"
-  ip_address = "${google_compute_address.api-server.self_link}"
-
-  provisioner "local-exec" {
-    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
-  }
-  provisioner "local-exec" {
-    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns}"
-  }
 }
 */
