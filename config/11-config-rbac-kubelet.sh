@@ -5,7 +5,7 @@
 #set -e
 
 # import common functions
-source ../../config/common.sh
+source common.sh
 
 waitForUrlOrExit http://localhost:8080/healthz
 #waitForUrlOrExit http://localhost:8080/version

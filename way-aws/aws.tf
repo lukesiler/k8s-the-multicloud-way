@@ -114,17 +114,10 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = "${aws_vpc.net.id}"
 }
 
-resource "aws_default_route_table" "igw-route" {
-  default_route_table_id = "${aws_vpc.net.default_route_table_id}"
-
-  route {
-    gateway_id = "${aws_internet_gateway.igw.id}"
-    cidr_block = "0.0.0.0/0"
-  }
-
-  tags {
-    Name = "${var.envPrefix}"
-  }
+resource "aws_route" "igw-route" {
+  route_table_id            = "${aws_vpc.net.default_route_table_id}"
+  gateway_id                = "${aws_internet_gateway.igw.id}"
+  destination_cidr_block    = "0.0.0.0/0"
 }
 
 resource "aws_subnet" "subnet-nodes" {
@@ -196,6 +189,7 @@ resource "aws_security_group" "allow-enough" {
   }
 }
 
+# teardown bug addressed by building plug-in from source - https://github.com/terraform-providers/terraform-provider-aws/pull/1956
 resource "aws_eip" "api-server" {
   vpc      = true
 
@@ -395,8 +389,22 @@ resource "null_resource" "master-nodes-api-rbac" {
     }
   }
 
+  provisioner "file" {
+    source      = "../config/common.sh"
+    destination = "common.sh"
+
+    connection {
+      // use index of the last master node for best chance that others are up and configured
+      host     = "${aws_instance.master-nodes.2.public_ip}"
+      type     = "ssh"
+      user     = "${var.awsSshUser}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+    }
+  }
+
   provisioner "remote-exec" {
     inline = [
+      "chmod +x ~/common.sh",
       "chmod +x ~/11-config-rbac-kubelet.sh",
       "~/11-config-rbac-kubelet.sh"
     ]
@@ -540,6 +548,13 @@ resource "aws_instance" "worker-nodes" {
       private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
     }
   }
+}
+
+resource "aws_route" "worker-pod-route" {
+  count                     = "${length(aws_instance.worker-nodes.*.id)}"
+  route_table_id            = "${aws_vpc.net.default_route_table_id}"
+  destination_cidr_block    = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
+  instance_id               = "${element(aws_instance.worker-nodes.*.id, count.index)}"
 }
 
 resource "aws_lb" "api-server" {
