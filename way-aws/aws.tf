@@ -94,6 +94,13 @@ variable "awsSshUser" {
   default = "ubuntu"
 }
 
+variable "masterCount" {
+  default = "3"
+}
+variable "workerCount" {
+  default = "3"
+}
+
 provider "aws" {
   access_key = "${trimspace(file("${var.awsAccessKeyIdPath}"))}"
   secret_key = "${trimspace(file("${var.awsSecretAccessKeyPath}"))}"
@@ -220,8 +227,6 @@ output "all-pods" {
 }
 
 resource "null_resource" "pki-keypairs" {
-  count = "1"
-
   provisioner "local-exec" {
     # make sure perms on ssh private key match AWS' requirements - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectingMindTerm
     command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem"
@@ -253,7 +258,7 @@ resource "null_resource" "pki-keypairs" {
 }
 
 resource "aws_instance" "master-nodes" {
-  count = "3"
+  count         = "${var.masterCount}"
   ami           = "${var.awsMachineImage}"
   instance_type = "${var.awsMachineType}"
   subnet_id     = "${aws_subnet.subnet-nodes.id}"
@@ -374,7 +379,6 @@ resource "aws_instance" "master-nodes" {
 
 resource "null_resource" "master-nodes-api-rbac" {
   # run RBAC config on just one of the masters after waiting for k8s API healthz
-  count = "1"
 
   provisioner "file" {
     source      = "../config/11-config-rbac-kubelet.sh"
@@ -420,7 +424,7 @@ resource "null_resource" "master-nodes-api-rbac" {
 }
 
 resource "aws_instance" "worker-nodes" {
-  count = "3"
+  count         = "${var.workerCount}"
   ami           = "${var.awsMachineImage}"
   instance_type = "${var.awsMachineType}"
   subnet_id     = "${aws_subnet.subnet-nodes.id}"
@@ -551,7 +555,7 @@ resource "aws_instance" "worker-nodes" {
 }
 
 resource "aws_route" "worker-pod-route" {
-  count                     = "${length(aws_instance.worker-nodes.*.id)}"
+  count                     = "${var.workerCount}"
   route_table_id            = "${aws_vpc.net.default_route_table_id}"
   destination_cidr_block    = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
   instance_id               = "${element(aws_instance.worker-nodes.*.id, count.index)}"
@@ -611,15 +615,3 @@ resource "aws_lb_listener" "api-server" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
   }
 }
-
-/*
-resource "google_compute_route" "worker-pod-route" {
-  count = "${google_compute_instance.worker-nodes.count}"
-
-  name        = "kubernetes-route-worker-${count.index}-pods"
-  dest_range  = "${var.podSubnetPrefix}${count.index}${var.podSubnetSuffix}"
-  network     = "${google_compute_network.net.self_link}"
-  next_hop_ip = "${var.workerPrimaryIpPrefix}${count.index}"
-  priority = 1000
-}
-*/
