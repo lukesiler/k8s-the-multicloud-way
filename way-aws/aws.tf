@@ -8,6 +8,7 @@ variable "awsMachineType" {
   default = "t2.medium"
 }
 variable "awsMachineImage" {
+  # ubuntu 16.04 LTS hvm:ebs-ssd
   default = "ami-965e6bf3"
 }
 variable "awsVpcCidr" {
@@ -194,6 +195,14 @@ resource "aws_security_group" "allow-enough" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  # allow worker interaction w/ API server on NLB IP
+  egress {
+    from_port = 6443
+    to_port = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # teardown bug addressed by building plug-in from source - https://github.com/terraform-providers/terraform-provider-aws/pull/1956
@@ -203,27 +212,6 @@ resource "aws_eip" "api-server" {
   tags {
     Name = "${var.envPrefix}"
   }
-}
-
-output "api-server-address" {
- value = "${aws_eip.api-server.public_ip}"
-}
-output "api-server-curl" {
- value = "curl --cacert pki/ca.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/version"
-}
-# mac curl has trouble with PEM format
-output "convert-to-pkcs12-for-mac-curl" {
- value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
-}
-output "curl-as-admin" {
- value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/api/v1/nodes"
-}
-
-output "create-servers" {
-  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
-}
-output "all-pods" {
-  value = "kubectl get pod -o wide --all-namespaces"
 }
 
 resource "null_resource" "pki-keypairs" {
@@ -363,6 +351,7 @@ resource "aws_instance" "master-nodes" {
   }
   provisioner "remote-exec" {
     inline = [
+      "sudo hostname ${var.envPrefix}${var.masterNameQualifier}${count.index}",
       "chmod +x ~/*.sh",
       "~/08-get-master-bits.sh ${var.verEtcd} ${var.verK8s}",
       "~/09-setup-etcd.sh ${count.index} ${var.masterPrimaryIpPrefix} ${var.masterNameQualifier}",
@@ -539,6 +528,9 @@ resource "aws_instance" "worker-nodes" {
   }
   provisioner "remote-exec" {
     inline = [
+      # make hostname match cert for mTLS
+      # TODO: switch to cloud-init for this - https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux_OpenStack_Platform/4/html/End_User_Guide/user-data.html and https://github.com/hashicorp/terraform/issues/1893
+      "sudo hostname ${var.envPrefix}${var.workerNameQualifier}${count.index}",
       "sudo apt-get -y install socat",
       "chmod +x ~/*.sh",
       "./12-get-worker-bits.sh ${var.verK8s} ${var.verContainerd} ${var.verCni}",
@@ -614,4 +606,33 @@ resource "aws_lb_listener" "api-server" {
   provisioner "local-exec" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
   }
+}
+
+output "api-server-address" {
+ value = "${aws_eip.api-server.public_ip}"
+}
+output "api-server-curl" {
+ value = "curl --cacert pki/ca.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/version"
+}
+# mac curl has trouble with PEM format
+output "convert-to-pkcs12-for-mac-curl" {
+ value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
+}
+output "curl-as-admin" {
+ value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/api/v1/nodes"
+}
+output "create-servers" {
+  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
+}
+output "all-pods" {
+  value = "kubectl get pod -o wide --all-namespaces"
+}
+output "ssh-to-master0" {
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem ${var.awsSshUser}@${element(aws_instance.master-nodes.*.public_ip, 0)}"
+}
+output "ssh-to-worker0" {
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem ${var.awsSshUser}@${element(aws_instance.worker-nodes.*.public_ip, 0)}"
+}
+output "kubelet-logs" {
+  value = "journalctl -u kubelet.service | less"
 }
