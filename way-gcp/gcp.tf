@@ -13,6 +13,9 @@ variable "gcpCredential" {
 variable "gcpMachineType" {
   default = "n1-standard-1"
 }
+variable "gcpSshUser" {
+  default = "siler"
+}
 
 variable "envPrefix" {
   default = "siler-k8s-thw"
@@ -80,10 +83,6 @@ variable "keypairs" {
   }
 }
 
-variable "ssh-user" {
-  default = "siler"
-}
-
 variable "gcpSshKeyPath" {
   default = "~/.ssh/google_compute_engine"
 }
@@ -145,35 +144,6 @@ resource "google_compute_firewall" "allow-external" {
 resource "google_compute_address" "api-server" {
  name = "${var.envPrefix}"
  region = "${var.gcpRegion}"
-}
-output "api-server-address" {
- value = "${google_compute_address.api-server.address}"
-}
-output "api-server-curl" {
- value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/version"
-}
-# mac curl has trouble with PEM format
-output "convert-to-pkcs12-for-mac-curl" {
- value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
-}
-output "curl-as-admin" {
- value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/api/v1/nodes"
-}
-output "create-servers" {
-  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
-}
-output "all-pods" {
-  value = "kubectl get pod -o wide --all-namespaces"
-}
-output "busybox-run" {
-  value = "kubectl run busybox --image=busybox --command -- sleep 3600"
-}
-output "busybox-nslookup" {
-  value = "POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath=\"{.items[0].metadata.name}\");kubectl exec -ti $POD_NAME -- nslookup kubernetes"
-}
-output "rhel-atomic-run" {
-  # broken - need to fix
-  value = "kubectl run rhel-atomic --image=registry.access.redhat.com/rhel7-atomic --command -- sleep 3600"
 }
 
 resource "null_resource" "pki-keypairs" {
@@ -241,7 +211,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -251,7 +221,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -261,7 +231,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -271,7 +241,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -281,7 +251,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -291,7 +261,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -301,7 +271,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -311,7 +281,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -325,7 +295,7 @@ resource "google_compute_instance" "master-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -343,13 +313,27 @@ resource "null_resource" "master-nodes-api-rbac" {
       // use index of the last master node for best chance that others are up and configured
       host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
+      private_key = "${file("${var.gcpSshKeyPath}")}"
+    }
+  }
+
+  provisioner "file" {
+    source      = "../config/common.sh"
+    destination = "common.sh"
+
+    connection {
+      // use index of the last master node for best chance that others are up and configured
+      host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
+      type     = "ssh"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
 
   provisioner "remote-exec" {
     inline = [
+      "chmod +x ~/common.sh",
       "chmod +x ~/11-config-rbac-kubelet.sh",
       "~/11-config-rbac-kubelet.sh"
     ]
@@ -358,7 +342,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       // use index of the last master node for best chance that others are up and configured
       host     = "${google_compute_instance.master-nodes.2.network_interface.0.access_config.0.assigned_nat_ip}"
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -404,7 +388,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -414,7 +398,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -424,7 +408,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -434,7 +418,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -444,7 +428,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -454,7 +438,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -464,7 +448,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -474,7 +458,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -484,7 +468,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -499,7 +483,7 @@ resource "google_compute_instance" "worker-nodes" {
 
     connection {
       type     = "ssh"
-      user     = "${var.ssh-user}"
+      user     = "${var.gcpSshUser}"
       private_key = "${file("${var.gcpSshKeyPath}")}"
     }
   }
@@ -544,6 +528,35 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
     command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
   }
   provisioner "local-exec" {
-    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns}"
+    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
   }
+}
+
+output "api-server-address" {
+ value = "${google_compute_address.api-server.address}"
+}
+output "api-server-curl" {
+ value = "curl --cacert pki/ca.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/version"
+}
+# mac curl has trouble with PEM format
+output "convert-to-pkcs12-for-mac-curl" {
+ value = "openssl pkcs12 -export -in pki/admin.pem -inkey pki/admin-key.pem -out pki/admin.p12"
+}
+output "curl-as-admin" {
+ value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/api/v1/nodes"
+}
+output "create-servers" {
+  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
+}
+output "all-pods" {
+  value = "kubectl get pod -o wide --all-namespaces"
+}
+output "ssh-to-master0" {
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.worker-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"
+}
+output "ssh-to-worker0" {
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.worker-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"
+}
+output "kubelet-logs" {
+  value = "journalctl -u kubelet.service | less"
 }
