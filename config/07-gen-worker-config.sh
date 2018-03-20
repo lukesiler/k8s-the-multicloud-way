@@ -11,11 +11,15 @@ workerNameQualifier=$(echo ${json} | jq -r '.workerNameQualifier')
 
 # access api server at LB IP so it is highly available
 KUBERNETES_PUBLIC_ADDRESS=${1}
+WORKER_COUNT=${2}
 
 prefix=${envPrefix}${workerNameQualifier}
 
 # generate kubelet config files
-for instance in ${prefix}0 ${prefix}1 ${prefix}2; do
+i=0
+while [ ${i} -lt ${WORKER_COUNT} ]; do
+  instance=${prefix}${i}
+
   kubectl config set-cluster kubernetes \
     --certificate-authority=../pki/ca.pem \
     --embed-certs=true \
@@ -34,6 +38,8 @@ for instance in ${prefix}0 ${prefix}1 ${prefix}2; do
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config use-context default --kubeconfig=${instance}.kubeconfig
+
+  (( i++ ))
 done
 
 # generate kube-proxy config files

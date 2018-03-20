@@ -15,7 +15,10 @@ geoCountry=$(echo ${json} | jq -r '.geoCountry')
 workerPrimIpPrefix=$(echo ${json} | jq -r '.workerPrimaryIpPrefix')
 workerNameQualifier=$(echo ${json} | jq -r '.workerNameQualifier')
 
-for i in 0 1 2; do
+WORKER_COUNT=${1}
+
+i=0
+while [ ${i} -lt ${WORKER_COUNT} ]; do
 hostname=${envPrefix}${workerNameQualifier}${i}
 ip=${workerPrimIpPrefix}${i}
 cat > ${hostname}-csr.json <<EOF
@@ -44,4 +47,6 @@ cfssl gencert \
   -hostname=${hostname},${ip} \
   -profile=kubernetes \
   ${hostname}-csr.json | cfssljson -bare ${hostname}
+
+(( i++ ))
 done

@@ -229,7 +229,7 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/2-gen-admin.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;../../pki/3-gen-worker-kubelets.sh"
+    command = "cd pki;../../pki/3-gen-worker-kubelets.sh ${var.workerCount}"
   }
   provisioner "local-exec" {
     command = "cd pki;../../pki/4-gen-kube-proxy.sh"
@@ -241,7 +241,7 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/6-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;../../config/07-gen-worker-config.sh ${aws_eip.api-server.public_ip}"
+    command = "cd config;../../config/07-gen-worker-config.sh ${aws_eip.api-server.public_ip} ${var.workerCount}"
   }
 }
 

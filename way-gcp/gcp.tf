@@ -87,6 +87,13 @@ variable "gcpSshKeyPath" {
   default = "~/.ssh/google_compute_engine"
 }
 
+variable "masterCount" {
+  default = "3"
+}
+variable "workerCount" {
+  default = "3"
+}
+
 provider "google" {
   credentials = "${file("${var.gcpCredential}")}"
   project     = "${var.gcpProject}"
@@ -159,7 +166,7 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/2-gen-admin.sh"
   }
   provisioner "local-exec" {
-    command = "cd pki;../../pki/3-gen-worker-kubelets.sh"
+    command = "cd pki;../../pki/3-gen-worker-kubelets.sh ${var.workerCount}"
   }
   provisioner "local-exec" {
     command = "cd pki;../../pki/4-gen-kube-proxy.sh"
@@ -171,12 +178,12 @@ resource "null_resource" "pki-keypairs" {
     command = "cd pki;../../pki/6-gen-encrypt-key.sh"
   }
   provisioner "local-exec" {
-    command = "cd config;../../config/07-gen-worker-config.sh ${google_compute_address.api-server.address}"
+    command = "cd config;../../config/07-gen-worker-config.sh ${google_compute_address.api-server.address} ${var.workerCount}"
   }
 }
 
 resource "google_compute_instance" "master-nodes" {
-  count = 3
+  count        = "${var.masterCount}" 
   name         = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   machine_type = "${var.gcpMachineType}"
   // future - use conditional to spread across zones by index
@@ -349,7 +356,7 @@ resource "null_resource" "master-nodes-api-rbac" {
 }
 
 resource "google_compute_instance" "worker-nodes" {
-  count = 3
+  count = "${var.workerCount}"
 
   name         = "${var.envPrefix}${var.workerNameQualifier}${count.index}"
   machine_type = "${var.gcpMachineType}"
