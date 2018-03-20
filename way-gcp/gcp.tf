@@ -1,79 +1,56 @@
 variable "gcpRegion" {
-  default = "us-west1"
 }
 variable "gcpZone" {
-  default = "a"
 }
 variable "gcpProject" {
-  default = "***REMOVED***-gcs-7531-***REMOVED***-prj-***REMOVED***-***REMOVED***"
 }
 variable "gcpCredential" {
-  default = "../../secrets/gcp/***REMOVED***-default/***REMOVED*** GCS 7531 ***REMOVED*** Prj Blue ***REMOVED***-437967ffb3d7.json"
 }
 variable "gcpMachineType" {
-  default = "n1-standard-1"
 }
 variable "gcpSshUser" {
-  default = "siler"
 }
 
 variable "envPrefix" {
-  default = "siler-k8s-thw"
 }
 variable "envName" {
-  default = "Kubernetes The Hard Way"
 }
 
 variable "physicalSubnetCidr" {
-  default = "192.168.1.0/24"
 }
 variable "masterPrimaryIpPrefix" {
-  default = "192.168.1.1"
 }
 variable "workerPrimaryIpPrefix" {
-  default = "192.168.1.2"
 }
 
 variable "masterNameQualifier" {
-  default = "-m-"
 }
 
 variable "masterApiServerPort" {
-  default = "6443"
 }
 
 variable "workerNameQualifier" {
-  default = "-w-"
 }
 
 variable "podSubnetCidr" {
-  default = "10.200.0.0/16"
 }
 variable "podSubnetPrefix" {
-  default = "10.200."
 }
 variable "podSubnetSuffix" {
-  default = ".0/24"
 }
 
 variable "serviceSubnetCidr" {
-  default = "10.32.0.0/24"
 }
 variable "serviceClusterKubeDns" {
-  default = "10.32.0.10"
 }
 
 variable "verEtcd" {
-  default = "3.2.8"
 }
 variable "verK8s" {
-  default = "1.8.0"
 }
 variable "verContainerd" {
-  default = "1.0.0-alpha.0"
 }
 variable "verCni" {
-  default = "0.6.0"
 }
 
 variable "keypairs" {
@@ -84,14 +61,11 @@ variable "keypairs" {
 }
 
 variable "gcpSshKeyPath" {
-  default = "~/.ssh/google_compute_engine"
 }
 
 variable "masterCount" {
-  default = "3"
 }
 variable "workerCount" {
-  default = "3"
 }
 
 provider "google" {
