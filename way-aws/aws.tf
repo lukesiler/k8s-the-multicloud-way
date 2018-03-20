@@ -1,24 +1,18 @@
 variable "awsRegion" {
-  default = "us-east-2"
 }
 variable "awsZone" {
-  default = "b"
 }
 variable "awsMachineType" {
-  default = "t2.medium"
 }
 variable "awsMachineImage" {
   # ubuntu 16.04 LTS hvm:ebs-ssd
   default = "ami-965e6bf3"
 }
 variable "awsVpcCidr" {
-  default = "192.168.0.0/16"
 }
 variable "awsAccessKeyIdPath" {
-  default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/access_key_id"
 }
 variable "awsSecretAccessKeyPath" {
-  default = "../../secrets/aws/***REMOVED***@***REMOVED***.com/luke/secret_access_key"
 }
 variable "awsSshKeyName" {
 }
@@ -26,62 +20,45 @@ variable "awsSshKeyPath" {
 }
 
 variable "envPrefix" {
-  default = "siler-k8s-thw"
 }
 variable "envName" {
-  default = "Kubernetes The Hard Way"
 }
 
 variable "physicalSubnetCidr" {
-  default = "192.168.1.0/24"
 }
 variable "masterPrimaryIpPrefix" {
-  default = "192.168.1.1"
 }
 variable "workerPrimaryIpPrefix" {
-  default = "192.168.1.2"
 }
 
 variable "masterNameQualifier" {
-  default = "-m-"
 }
 
 variable "masterApiServerPort" {
-  default = "6443"
 }
 
 variable "workerNameQualifier" {
-  default = "-w-"
 }
 
 variable "podSubnetCidr" {
-  default = "10.200.0.0/16"
 }
 variable "podSubnetPrefix" {
-  default = "10.200."
 }
 variable "podSubnetSuffix" {
-  default = ".0/24"
 }
 
 variable "serviceSubnetCidr" {
-  default = "10.32.0.0/24"
 }
 variable "serviceClusterKubeDns" {
-  default = "10.32.0.10"
 }
 
 variable "verEtcd" {
-  default = "3.2.8"
 }
 variable "verK8s" {
-  default = "1.8.0"
 }
 variable "verContainerd" {
-  default = "1.0.0-alpha.0"
 }
 variable "verCni" {
-  default = "0.6.0"
 }
 
 variable "keypairs" {
@@ -92,14 +69,11 @@ variable "keypairs" {
 }
 
 variable "awsSshUser" {
-  default = "ubuntu"
 }
 
 variable "masterCount" {
-  default = "3"
 }
 variable "workerCount" {
-  default = "3"
 }
 
 provider "aws" {
