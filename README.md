@@ -28,6 +28,8 @@ machine:dir user$ brew install cfssl
 
 machine:dir user$ brew install kubernetes-cli
 
+machine:dir user$ brew install jq
+
 machine:dir user$ git clone
 
 machine:dir user$ vim in.json
@@ -38,5 +40,5 @@ machine:dir user$ terraform apply -var-file ../in.json
 
 machine:dir user$ kubectl create your-interesting-experiments
 
-machine:dir user$ terraform destroy
+machine:dir user$ terraform destroy -var-file ../in.json
 ```
