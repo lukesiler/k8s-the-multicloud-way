@@ -13,11 +13,11 @@ An implementation of
 
 <a href="https://stedolan.github.io/jq/">jq</a> for bash-based JSON parsing of in.json which is also Terraform input variable file.
 
-Initial version is implemented on Google Cloud Platform (GCP), but the plan is to follow that with an AWS version and eventually vSphere.
+Ways now implemented are Google Cloud Platform (GCP) and Amazon Web Services (AWS).  vCenter-managed vSphere will be next.
 
 ## Try It
 
-Basic instructions to try this out yourself.
+Basic instructions to try this out yourself.  You'll need to configure **in.json** to point to your SSH and IAM private keys and also recommend changing **envPrefix** to identify your infrastructure resources. 
 
 ### MacOS
 
