@@ -16,6 +16,8 @@ sudo mv etcd-v3.*-linux-amd64/etcd* /usr/local/bin/
 sudo mkdir -p /etc/etcd /var/lib/etcd
 sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
 
+# http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
+# 2379 etcd-client & 2380 etcd-server
 cat > etcd.service <<EOF
 [Unit]
 Description=etcd

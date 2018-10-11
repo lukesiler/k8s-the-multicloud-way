@@ -32,9 +32,18 @@ machine:dir user$ brew install jq
 
 machine:dir user$ git clone
 
+machine:dir user$ ssh-keygen -t rsa -f k8s-the-tf-way -C ssh-user
+
+machine:dir user$ chmod 400 k8s-the-tf-way
+
+machine:dir user$ import public key into GCP Project and/or AWS Region
+
+# u***REMOVED***ate fields to match your GCP and/or AWS accounts
 machine:dir user$ vim in.json
 
-machine:dir user$ cd way-gcp
+machine:dir user$ cd way-gcp OR cd way-aws
+
+machine:dir user$ terraform init
 
 machine:dir user$ terraform apply -var-file ../in.json
 

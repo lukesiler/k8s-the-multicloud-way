@@ -191,7 +191,7 @@ resource "aws_eip" "api-server" {
 resource "null_resource" "pki-keypairs" {
   provisioner "local-exec" {
     # make sure perms on ssh private key match AWS' requirements - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectingMindTerm
-    command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem"
+    command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyName}"
   }
   provisioner "local-exec" {
     command = "mkdir -p pki config;rm -f pki/* config/*"
@@ -241,7 +241,7 @@ resource "aws_instance" "master-nodes" {
     Name = "${var.envPrefix}${var.masterNameQualifier}${count.index}"
   }
 
-  depends_on = ["aws_internet_gateway.igw"]
+  depends_on = ["aws_internet_gateway.igw", "null_resource.pki-keypairs"]
 
   provisioner "file" {
     source      = "pki/${var.keypairs["ca"]}.pem"
@@ -250,7 +250,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -260,7 +260,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -270,7 +270,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -280,7 +280,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -290,7 +290,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -300,7 +300,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -310,7 +310,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -320,7 +320,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "remote-exec" {
@@ -335,9 +335,14 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
+}
+
+resource "aws_eip_association" "master-node0-public-ip" {
+  instance_id   = "${aws_instance.master-nodes.0.id}"
+  allocation_id = "${aws_eip.api-server.id}"
 }
 
 resource "null_resource" "master-nodes-api-rbac" {
@@ -352,7 +357,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
 
@@ -365,7 +370,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
 
@@ -381,7 +386,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
 }
@@ -417,7 +422,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -427,7 +432,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -437,7 +442,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -447,7 +452,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -457,7 +462,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -467,7 +472,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -477,7 +482,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -487,7 +492,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "file" {
@@ -497,7 +502,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
   provisioner "remote-exec" {
@@ -515,7 +520,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}.pem")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
     }
   }
 }
@@ -527,6 +532,22 @@ resource "aws_route" "worker-pod-route" {
   instance_id               = "${element(aws_instance.worker-nodes.*.id, count.index)}"
 }
 
+resource "null_resource" "finish-up" {
+
+  # Wait for worker pod routes to be created
+  depends_on = ["aws_route.worker-pod-route", "aws_eip_association.master-node0-public-ip"]
+
+  # run RBAC config on just one of the masters after waiting for k8s API healthz
+  provisioner "local-exec" {
+    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
+  }
+  provisioner "local-exec" {
+    command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
+  }
+}
+
+/**
+# due to limitation in NLB terraform API (see github links) and slowness of NLB provisioning, this has been dropped to just associate EIP with a master node directly
 resource "aws_lb" "api-server" {
   # NLB sits in provisioning for minutes - very slow
   name            = "${var.envPrefix}"
@@ -559,7 +580,7 @@ resource "aws_lb_target_group" "api-server" {
 
 resource "aws_lb_target_group_attachment" "master-node-0" {
   target_group_arn = "${aws_lb_target_group.api-server.arn}"
-  # need a hack to get all three - https://github.com/hashicorp/terraform/pull/9986
+  # need a hack to get all three - https://github.com/hashicorp/terraform/pull/9986 and https://github.com/terraform-providers/terraform-provider-aws/pull/1726
   target_id        = "${aws_instance.master-nodes.0.id}"
   port             = "${var.masterApiServerPort}"
 }
@@ -581,6 +602,7 @@ resource "aws_lb_listener" "api-server" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
   }
 }
+*/
 
 output "api-server-address" {
  value = "${aws_eip.api-server.public_ip}"
