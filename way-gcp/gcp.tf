@@ -533,7 +533,7 @@ output "all-pods" {
   value = "kubectl get pod -o wide --all-namespaces"
 }
 output "ssh-to-master0" {
-  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.worker-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.master-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"
 }
 output "ssh-to-worker0" {
   value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.worker-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"
