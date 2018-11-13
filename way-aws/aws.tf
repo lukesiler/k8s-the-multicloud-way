@@ -14,7 +14,9 @@ variable "awsAccessKeyIdPath" {
 }
 variable "awsSecretAccessKeyPath" {
 }
-variable "awsSshKeyName" {
+variable "awsSshKeyPairName" {
+}
+variable "awsSshKeyFileName" {
 }
 variable "awsSshKeyPath" {
 }
@@ -191,7 +193,7 @@ resource "aws_eip" "api-server" {
 resource "null_resource" "pki-keypairs" {
   provisioner "local-exec" {
     # make sure perms on ssh private key match AWS' requirements - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectingMindTerm
-    command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyName}"
+    command = "chmod 400 ${var.awsSshKeyPath}/${var.awsSshKeyFileName}"
   }
   provisioner "local-exec" {
     command = "mkdir -p pki config;rm -f pki/* config/*"
@@ -227,7 +229,7 @@ resource "aws_instance" "master-nodes" {
   associate_public_ip_address = true
   source_dest_check = false
   private_ip = "${var.masterPrimaryIpPrefix}${count.index}"
-  key_name = "${var.awsSshKeyName}"
+  key_name = "${var.awsSshKeyPairName}"
 
   vpc_security_group_ids = [
     "${aws_security_group.allow-enough.id}"
@@ -250,7 +252,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -260,7 +262,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -270,7 +272,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -280,7 +282,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -290,7 +292,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -300,7 +302,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -310,7 +312,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -320,7 +322,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "remote-exec" {
@@ -335,7 +337,7 @@ resource "aws_instance" "master-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
 }
@@ -357,7 +359,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
 
@@ -370,7 +372,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
 
@@ -386,7 +388,7 @@ resource "null_resource" "master-nodes-api-rbac" {
       host     = "${aws_instance.master-nodes.2.public_ip}"
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
 }
@@ -399,7 +401,7 @@ resource "aws_instance" "worker-nodes" {
   associate_public_ip_address = true
   source_dest_check = false
   private_ip = "${var.workerPrimaryIpPrefix}${count.index}"
-  key_name = "${var.awsSshKeyName}"
+  key_name = "${var.awsSshKeyPairName}"
 
   vpc_security_group_ids = [
     "${aws_security_group.allow-enough.id}"
@@ -422,7 +424,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -432,7 +434,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -442,7 +444,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -452,7 +454,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -462,7 +464,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -472,7 +474,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -482,7 +484,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -492,7 +494,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "file" {
@@ -502,7 +504,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
   provisioner "remote-exec" {
@@ -520,7 +522,7 @@ resource "aws_instance" "worker-nodes" {
     connection {
       type     = "ssh"
       user     = "${var.awsSshUser}"
-      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyName}")}"
+      private_key = "${file("${var.awsSshKeyPath}/${var.awsSshKeyFileName}")}"
     }
   }
 }
@@ -624,10 +626,10 @@ output "all-pods" {
   value = "kubectl get pod -o wide --all-namespaces"
 }
 output "ssh-to-master0" {
-  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem ${var.awsSshUser}@${element(aws_instance.master-nodes.*.public_ip, 0)}"
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyFileName} ${var.awsSshUser}@${element(aws_instance.master-nodes.*.public_ip, 0)}"
 }
 output "ssh-to-worker0" {
-  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyName}.pem ${var.awsSshUser}@${element(aws_instance.worker-nodes.*.public_ip, 0)}"
+  value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyFileName} ${var.awsSshUser}@${element(aws_instance.worker-nodes.*.public_ip, 0)}"
 }
 output "kubelet-logs" {
   value = "journalctl -u kubelet.service | less"
