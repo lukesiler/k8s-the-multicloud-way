@@ -30,11 +30,11 @@ machine:dir user$ brew install kubernetes-cli
 
 machine:dir user$ brew install jq
 
-machine:dir user$ git clone
+machine:dir user$ git clone ;cd k8s-the-multicloud-way
 
-machine:dir user$ ssh-keygen -t rsa -f k8s-the-tf-way -C ssh-user
+machine:dir user$ ssh-keygen -t rsa -f k8s-the-mc-way -C ssh-user
 
-machine:dir user$ chmod 400 k8s-the-tf-way
+machine:dir user$ chmod 400 k8s-the-mc-way
 
 machine:dir user$ import public key into GCP Project and/or AWS Region
 
