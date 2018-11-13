@@ -10,3 +10,4 @@ encryption-config.yaml
 .DS_Store
 *-csr.json
 kube-dns.yaml
+kubectl-config

@@ -506,7 +506,7 @@ resource "google_compute_forwarding_rule" "api-server-lb" {
   ip_address = "${google_compute_address.api-server.self_link}"
 
   provisioner "local-exec" {
-    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
+    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${google_compute_address.api-server.address} ${var.masterApiServerPort} gcp"
   }
   provisioner "local-exec" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${google_compute_address.api-server.address} ${var.masterApiServerPort}"
@@ -527,10 +527,10 @@ output "curl-as-admin" {
  value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${google_compute_address.api-server.address}:${var.masterApiServerPort}/api/v1/nodes"
 }
 output "create-servers" {
-  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
+  value = "kubectl run whoami --kubeconfig=kubectl-config --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
 }
 output "all-pods" {
-  value = "kubectl get pod -o wide --all-namespaces"
+  value = "kubectl get pod -o wide --kubeconfig=kubectl-config --all-namespaces"
 }
 output "ssh-to-master0" {
   value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcpSshKeyPath} ${var.gcpSshUser}@${element(google_compute_instance.master-nodes.*.network_interface.0.access_config.0.assigned_nat_ip, 0)}"

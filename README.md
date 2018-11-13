@@ -19,7 +19,7 @@ Ways now implemented are Google Cloud Platform (GCP) and Amazon Web Services (AW
 
 Basic instructions to try this out yourself.  You'll need to configure **in.json** to point to your SSH and IAM private keys and also recommend changing **envPrefix** to identify your infrastructure resources.
 
-## Inputs File Reference (in.json)
+### Inputs File Reference (in.json)
 
 Name | Example | Description
 --- | --- | ---

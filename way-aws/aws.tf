@@ -541,7 +541,7 @@ resource "null_resource" "finish-up" {
 
   # run RBAC config on just one of the masters after waiting for k8s API healthz
   provisioner "local-exec" {
-    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
+    command = "cd config;../../config/15-setup-kubectl-local.sh ${var.envPrefix} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort} aws"
   }
   provisioner "local-exec" {
     command = "cd config;../../config/16-setup-dns.sh ${var.serviceClusterKubeDns} ${aws_eip.api-server.public_ip} ${var.masterApiServerPort}"
@@ -620,10 +620,10 @@ output "curl-as-admin" {
  value = "curl --cacert pki/ca.pem --cert pki/admin.pem --key pki/admin-key.pem https://${aws_eip.api-server.public_ip}:${var.masterApiServerPort}/api/v1/nodes"
 }
 output "create-servers" {
-  value = "kubectl run whoami --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
+  value = "kubectl run whoami --kubeconfig=kubectl-config --replicas=3 --labels=\"run=server-example\" --image=emilevauge/whoami  --port=8081"
 }
 output "all-pods" {
-  value = "kubectl get pod -o wide --all-namespaces"
+  value = "kubectl get pod -o wide --kubeconfig=kubectl-config --all-namespaces"
 }
 output "ssh-to-master0" {
   value = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.awsSshKeyPath}/${var.awsSshKeyFileName} ${var.awsSshUser}@${element(aws_instance.master-nodes.*.public_ip, 0)}"

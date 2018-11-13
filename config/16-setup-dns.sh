@@ -210,4 +210,5 @@ spec:
       serviceAccountName: kube-dns
 EOF
 
-kubectl create -f kube-dns.yaml
+kubectl create --kubeconfig=../kubectl-config \
+  -f kube-dns.yaml
