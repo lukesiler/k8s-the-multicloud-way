@@ -9,7 +9,7 @@ An implementation of
 
 <a href="https://github.com/cloudflare/cfssl">CloudFlare's PKI/TLS Toolkit</a> for <a href="https://en.wikipedia.org/wiki/Public_key_infrastructure">PKI</a>.
 
-<a href="https://github.com/cloudflare/cfssl">bash</a> for bootstrap configuration as invoked by <a href="https://www.terraform.io/docs/provisioners/index.html">Terraform SSH/SCP remote provisioners</a>.
+<a href="https://www.gnu.org/software/bash/">bash</a> for bootstrap configuration as invoked by <a href="https://www.terraform.io/docs/provisioners/index.html">Terraform SSH/SCP remote provisioners</a>.
 
 <a href="https://stedolan.github.io/jq/">jq</a> for bash-based JSON parsing of in.json which is also Terraform input variable file.
 
