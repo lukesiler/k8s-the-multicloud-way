@@ -1,0 +1,56 @@
+{
+    "gcpProject": "",
+    "gcpCredential": "",
+    "gcpRegion": "us-west1",
+    "gcpZone": "a",
+    "gcpMachineType": "n1-standard-1",
+    "gcpSshKeyPath": "../../secrets/ssh/k8s-the-mc-way",
+    "gcpSshUser": "ssh-user",
+
+    "awsRegion": "ca-central-1",
+    "awsZone": "a",
+    "awsMachineType": "t2.medium",
+    "awsMachineImage": "ami-ae55d2ca",
+    "awsVpcCidr": "192.168.0.0/16",
+    "awsSshKeyPairName": "yoursurname-k8s-the-mc-way",
+    "awsSshKeyFileName": "k8s-the-mc-way",
+    "awsSshKeyPath": "../../secrets/ssh",
+    "awsSshUser": "ubuntu",
+    "awsAccessKeyIdPath": "",
+    "awsSecretAccessKeyPath": "",
+    
+    "envId": "Kubernetes",
+    "envPrefix": "yoursurname-k8s-tmcw",
+    "envName": "Kubernetes The Multi-Cloud Way",
+    
+    "geoCountry": "US",
+    "geoState": "Washington",
+    "geoCity": "Seattle",
+
+    "pkiAlgo": "rsa",
+    "pkiSize": 2048,
+
+    "serviceSubnetCidr": "10.32.0.0/24",
+    "serviceClusterKubeApi": "10.32.0.1",
+    "serviceClusterKubeDns": "10.32.0.10",
+
+    "podSubnetCidr": "10.200.0.0/16",
+    "podSubnetPrefix": "10.200.",
+    "podSubnetSuffix": ".0/24",
+
+    "physicalSubnetCidr": "192.168.1.0/24",
+    
+    "masterCount": "3",
+    "masterNameQualifier": "-m-",
+    "masterPrimaryIpPrefix": "192.168.1.1",
+    "masterApiServerPort": 6443,
+    
+    "workerCount": "3",
+    "workerNameQualifier": "-w-",
+    "workerPrimaryIpPrefix": "192.168.1.2",
+
+    "verEtcd": "3.3.9",
+    "verK8s": "1.9.10",
+    "verContainerd": "1.0.0-beta.0",
+    "verCni": "0.6.0"
+}

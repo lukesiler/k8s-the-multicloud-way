@@ -70,7 +70,7 @@ spec:
   # 2. Default is 1.
   # 3. Will be tuned in real time if DNS horizontal auto-scaling is turned on.
   strategy:
-    rollingU***REMOVED***ate:
+    rollingUpdate:
       maxSurge: 10%
       maxUnavailable: 0
   selector:

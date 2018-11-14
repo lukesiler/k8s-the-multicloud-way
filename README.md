@@ -56,7 +56,7 @@ machine:dir user$ chmod 400 secrets/ssh/k8s-the-mc-way
 
 machine:dir user$ cd k8s-the-multicloud-way
 
-# u***REMOVED***ate fields to match your GCP and/or AWS accounts
+# update fields to match your GCP and/or AWS accounts
 machine:dir user$ vim in.json
 
 machine:dir user$ cd way-gcp OR cd way-aws

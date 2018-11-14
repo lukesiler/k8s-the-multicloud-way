@@ -18,7 +18,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   annotations:
-    rbac.authorization.kubernetes.io/autou***REMOVED***ate: "true"
+    rbac.authorization.kubernetes.io/autoupdate: "true"
   labels:
     kubernetes.io/bootstrapping: rbac-defaults
   name: system:kube-apiserver-to-kubelet
