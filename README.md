@@ -1,7 +1,7 @@
-# Kubernetes the Terraform Way
+# Kubernetes the Multi-Cloud Way
 
 An implementation of 
-<a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">Kubernetes The Hard Way</a> that makes it easy to spin up K8S clusters quickly, peel the onion layers to understand exactly the steps involved, and change things up to try something different or new.
+<a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">Kubernetes The Hard Way</a> that makes it easy to spin up K8S clusters quickly on different cloud providers, peel the onion layers to understand exactly the steps involved, and change things up to try something different or new.
 
 ## Tools
 
@@ -13,7 +13,7 @@ An implementation of
 
 <a href="https://stedolan.github.io/jq/">jq</a> for bash-based JSON parsing of in.json which is also Terraform input variable file.
 
-Ways now implemented are Google Cloud Platform (GCP) and Amazon Web Services (AWS).  vCenter-managed vSphere will be next.
+Ways now implemented are Google Cloud Platform (GCP) and Amazon Web Services (AWS).  Azure and vCenter-managed vSphere are future plans.
 
 ## Try It
 
